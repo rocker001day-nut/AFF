@@ -1,0 +1,2605 @@
+﻿<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Affiliate Profit Calculator</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7fb;
+      --panel: #ffffff;
+      --ink: #172026;
+      --muted: #64717a;
+      --line: #e2e8f0;
+      --accent: #f97415;
+      --accent-dark: #c2410c;
+      --accent-2: #2563eb;
+      --bad: #b42318;
+      --good: #067647;
+      --warn: #b54708;
+      --shadow: 0 16px 44px rgba(15, 23, 42, .08);
+    }
+
+    body.dark {
+      color-scheme: dark;
+      --bg: #0f172a;
+      --panel: #111827;
+      --ink: #e5e7eb;
+      --muted: #9ca3af;
+      --line: #243044;
+      --accent: #fb923c;
+      --accent-dark: #fdba74;
+      --accent-2: #60a5fa;
+      --bad: #f87171;
+      --good: #34d399;
+      --warn: #fbbf24;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .32);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(249, 115, 22, .12), transparent 34rem),
+        linear-gradient(180deg, #fbf7f4 0, var(--bg) 28rem);
+      color: var(--ink);
+    }
+
+    body.dark {
+      background:
+        radial-gradient(circle at top left, rgba(251, 146, 60, .16), transparent 34rem),
+        linear-gradient(180deg, #1f2937 0, var(--bg) 28rem);
+    }
+
+    header {
+      padding: 28px clamp(16px, 4vw, 44px) 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 850;
+      letter-spacing: 0;
+    }
+
+    .hero {
+      max-width: 1760px;
+      margin: 0 auto;
+      display: grid;
+      gap: 14px;
+      justify-items: stretch;
+      text-align: left;
+      position: relative;
+    }
+
+    .hero-top {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 12px;
+      flex-wrap: wrap;
+      width: 100%;
+      position: relative;
+      min-height: 46px;
+      padding-left: 88px;
+    }
+
+    .brand-row {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 16px;
+      width: min(880px, calc(100% - 580px));
+      min-height: 136px;
+    }
+
+    .logo-shell {
+      width: clamp(92px, 9vw, 132px);
+      aspect-ratio: 1;
+      display: grid;
+      place-items: center;
+      border-radius: 22px;
+      padding: 0;
+      background: transparent;
+      box-shadow:
+        0 18px 44px rgba(15, 23, 42, .18),
+        0 0 0 1px rgba(249, 115, 22, .16);
+    }
+
+    body.dark .logo-shell {
+      background: transparent;
+      box-shadow:
+        0 18px 44px rgba(0, 0, 0, .28),
+        0 0 34px rgba(249, 115, 22, .12);
+    }
+
+    .brand-logo {
+      width: clamp(84px, 8vw, 122px);
+      aspect-ratio: 1;
+      object-fit: contain;
+      border-radius: 22px;
+      background: transparent;
+      filter: drop-shadow(0 10px 18px rgba(0, 0, 0, .18));
+    }
+
+    .hero-badge {
+      width: fit-content;
+      border: 1px solid rgba(249, 115, 22, .24);
+      background: #fff7ed;
+      color: var(--accent-dark);
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    #themeToggle {
+      position: absolute;
+      left: 0;
+      top: 0;
+    }
+
+    .theme-switch {
+      width: 74px;
+      min-height: 38px;
+      border-radius: 999px;
+      padding: 4px;
+      border: 1px solid rgba(15, 23, 42, .12);
+      background: #ffffff;
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .08);
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .theme-switch .theme-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      display: inline-grid;
+      place-items: center;
+      color: #64717a;
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .theme-switch .theme-sun {
+      background: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(249, 116, 21, .28);
+    }
+
+    body.dark .theme-switch {
+      background: #0f172a;
+      border-color: rgba(255, 255, 255, .14);
+    }
+
+    body.dark .theme-switch .theme-sun {
+      background: transparent;
+      color: #9ca3af;
+      box-shadow: none;
+    }
+
+    body.dark .theme-switch .theme-moon {
+      background: #ffffff;
+      color: #111827;
+      box-shadow: 0 8px 18px rgba(255, 255, 255, .16);
+    }
+
+    .auth-card {
+      width: auto;
+      max-width: min(560px, 58vw);
+      display: grid;
+      grid-template-columns: minmax(160px, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, .86);
+      box-shadow: 0 10px 28px rgba(15, 23, 42, .08);
+      position: absolute;
+      right: 0;
+      top: 0;
+      z-index: 5;
+    }
+
+    .auth-card .btn {
+      min-height: 38px;
+    }
+
+    .auth-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .auth-label {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      line-height: 1.2;
+      margin-bottom: 3px;
+    }
+
+    body.dark .auth-card {
+      background: rgba(17, 24, 39, .88);
+    }
+
+    .auth-status {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      line-height: 1.45;
+      max-width: 280px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .auth-card.signed-in {
+      border-color: rgba(6, 118, 71, .28);
+      box-shadow: 0 12px 30px rgba(6, 118, 71, .12);
+    }
+
+    .auth-card.signed-in .auth-status {
+      color: var(--good);
+    }
+
+    .auth-card.signed-out .auth-status {
+      color: var(--muted);
+    }
+
+    body.dark .hero-badge {
+      background: rgba(251, 146, 60, .14);
+      border-color: rgba(251, 146, 60, .3);
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 860px;
+      line-height: 1.55;
+      text-align: left;
+    }
+
+    main {
+      padding: 22px clamp(14px, 2.5vw, 32px) 44px;
+      display: grid;
+      gap: 18px;
+      width: min(1760px, 100%);
+      max-width: none;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(180deg, #fff, #fffaf6);
+    }
+
+    body.dark .panel-heading {
+      background: linear-gradient(180deg, #111827, #172033);
+    }
+
+    .panel-heading h2 {
+      margin: 0;
+      font-size: 18px;
+      letter-spacing: 0;
+    }
+
+    .panel-heading p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+    }
+
+    .search-bar {
+      padding: 0 14px 14px;
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .search-bar input {
+      min-height: 44px;
+    }
+
+    .search-meta {
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink);
+      border-radius: 999px;
+      min-height: 40px;
+      padding: 8px 14px;
+      font: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      box-shadow: 0 8px 20px rgba(15, 23, 42, .06);
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease, background .15s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 14px 26px rgba(15, 23, 42, .1);
+    }
+
+    .btn:disabled,
+    input:disabled,
+    select:disabled {
+      cursor: not-allowed;
+      opacity: .58;
+      transform: none;
+      box-shadow: none;
+    }
+
+    body.dark .btn,
+    body.dark input,
+    body.dark select {
+      background: #0f172a;
+      color: var(--ink);
+    }
+
+    .btn.primary {
+      background: #171717;
+      border-color: #171717;
+      color: #fff;
+      font-weight: 650;
+    }
+
+    .btn.upload {
+      min-height: 46px;
+      justify-content: center;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 850;
+      box-shadow: 0 12px 26px rgba(249, 116, 21, .26);
+    }
+
+    .btn.upload:hover {
+      box-shadow: 0 16px 32px rgba(249, 116, 21, .34);
+    }
+
+    body.dark .btn.upload {
+      background: var(--accent);
+      color: #111827;
+    }
+
+    body.dark .btn.primary {
+      background: #ffffff;
+      border-color: #ffffff;
+      color: #111827;
+    }
+
+    .btn.danger {
+      color: var(--bad);
+      border-color: rgba(180, 35, 24, .22);
+      background: #fff7f5;
+    }
+
+    body.dark .btn.danger {
+      background: rgba(248, 113, 113, .12);
+      border-color: rgba(248, 113, 113, .26);
+    }
+
+    .date-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: end;
+      justify-content: space-between;
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .date-field {
+      display: grid;
+      gap: 6px;
+      min-width: min(260px, 100%);
+    }
+
+    .date-field.small {
+      min-width: min(180px, 100%);
+    }
+
+    .date-field label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+    }
+
+    .save-status {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .import-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(260px, 1fr));
+      gap: 14px;
+      padding: 16px;
+    }
+
+    .import-box {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 16px;
+      background: #ffffff;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      border-top: 4px solid var(--accent);
+    }
+
+    .import-box.revenue,
+    .import-box.shopee {
+      border-top-color: #f97316;
+    }
+
+    .import-box.lazada {
+      border-top-color: #2563eb;
+    }
+
+    .import-box.facebook {
+      border-top-color: #0ea5e9;
+    }
+
+    .import-box.manual,
+    .import-box.live {
+      border-top-color: #f5b700;
+    }
+
+    .import-box.shopee .step-label {
+      background: #fff7ed;
+      color: #c2410c;
+    }
+
+    .import-box.lazada .step-label {
+      background: #eff6ff;
+      color: #1d4ed8;
+    }
+
+    .import-box.facebook .step-label {
+      background: #effaff;
+      color: #0369a1;
+    }
+
+    .import-box.live .step-label {
+      background: #fffbeb;
+      color: #92400e;
+    }
+
+    .import-box.lazada .btn.upload {
+      background: #2563eb;
+      border-color: #2563eb;
+      box-shadow: 0 12px 26px rgba(37, 99, 235, .24);
+    }
+
+    .import-box.lazada .btn.upload:hover {
+      box-shadow: 0 16px 32px rgba(37, 99, 235, .32);
+    }
+
+    .import-box.facebook .btn.upload {
+      background: #0ea5e9;
+      border-color: #0ea5e9;
+      box-shadow: 0 12px 26px rgba(14, 165, 233, .24);
+    }
+
+    .import-box.facebook .btn.upload:hover {
+      box-shadow: 0 16px 32px rgba(14, 165, 233, .32);
+    }
+
+    .import-box.live .btn.upload {
+      background: #f5b700;
+      border-color: #d97706;
+      color: #2f1f00;
+      box-shadow: 0 12px 26px rgba(245, 183, 0, .28);
+    }
+
+    .import-box.live .btn.upload:hover {
+      box-shadow: 0 16px 32px rgba(245, 183, 0, .36);
+    }
+
+    .step-label {
+      width: fit-content;
+      border-radius: 999px;
+      padding: 4px 9px;
+      background: #fff7ed;
+      color: var(--accent-dark);
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    body.dark .step-label {
+      background: rgba(251, 146, 60, .14);
+    }
+
+    body.dark .import-box.lazada .step-label {
+      background: rgba(96, 165, 250, .16);
+      color: #93c5fd;
+    }
+
+    body.dark .import-box.facebook .step-label {
+      background: rgba(56, 189, 248, .16);
+      color: #7dd3fc;
+    }
+
+    body.dark .import-box.live .step-label {
+      background: rgba(251, 191, 36, .16);
+      color: #fbbf24;
+    }
+
+    body.dark .import-box {
+      background: #0f172a;
+    }
+
+    .import-box h2 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .import-box p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .import-status {
+      min-height: 22px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(150px, 1fr));
+      gap: 12px;
+      padding: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      min-height: 98px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      border-left: 4px solid var(--accent);
+    }
+
+    body.dark .metric {
+      background: linear-gradient(180deg, #111827, #0f172a);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(18px, 2vw, 24px);
+      overflow-wrap: anywhere;
+    }
+
+    .daily-chart {
+      margin: 0 16px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(180deg, #ffffff, #f8fafc);
+      overflow: hidden;
+    }
+
+    body.dark .daily-chart {
+      background: linear-gradient(180deg, #111827, #0f172a);
+    }
+
+    .daily-chart-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .daily-chart-head h3 {
+      margin: 0;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .daily-chart-head p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .chart-legend {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px 14px;
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .chart-legend span {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .legend-dot.shopee,
+    .bar-segment.shopee { background: #f97316; }
+
+    .legend-dot.lazada,
+    .bar-segment.lazada { background: #2563eb; }
+
+    .legend-dot.live,
+    .bar-segment.live { background: #f5b700; }
+
+    .chart-scroll {
+      overflow-x: auto;
+      padding: 16px 14px 12px;
+    }
+
+    .chart-bars {
+      min-height: 250px;
+      min-width: 100%;
+      display: grid;
+      grid-auto-flow: column;
+      grid-auto-columns: minmax(54px, 1fr);
+      align-items: end;
+      gap: 12px;
+      border-left: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+      background:
+        linear-gradient(to top, var(--line) 1px, transparent 1px) 0 0 / 100% 25%;
+      padding: 12px 10px 0;
+    }
+
+    .chart-day {
+      min-width: 54px;
+      display: grid;
+      grid-template-rows: 1fr auto;
+      gap: 8px;
+      justify-items: center;
+      height: 250px;
+    }
+
+    .bar-stack {
+      width: min(42px, 100%);
+      height: 100%;
+      display: flex;
+      flex-direction: column-reverse;
+      justify-content: flex-start;
+      border-radius: 7px 7px 0 0;
+      overflow: hidden;
+      background: rgba(100, 113, 122, .12);
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .08);
+      align-self: end;
+    }
+
+    .bar-segment {
+      min-height: 0;
+    }
+
+    .bar-label {
+      max-width: 72px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.2;
+      text-align: center;
+      transform: rotate(-32deg);
+      transform-origin: top center;
+      white-space: nowrap;
+      margin-bottom: 16px;
+    }
+
+    .chart-empty {
+      padding: 0 16px 16px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .good { color: var(--good); }
+    .bad { color: var(--bad); }
+    .warn { color: var(--warn); }
+
+    .table-wrap {
+      overflow-x: auto;
+      border-top: 1px solid var(--line);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1320px;
+    }
+
+    th:first-child,
+    td:first-child {
+      width: 190px;
+      min-width: 190px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--line);
+      padding: 11px 10px;
+      text-align: left;
+      vertical-align: middle;
+      font-size: 14px;
+    }
+
+    th {
+      background: #fff7ed;
+      color: #34434d;
+      font-weight: 700;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    body.dark th {
+      background: #1f2937;
+      color: #e5e7eb;
+    }
+
+    body.dark tbody tr:hover {
+      background: #172033;
+    }
+
+    tbody tr:hover {
+      background: #fffaf5;
+    }
+
+    .sort-header {
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-weight: 700;
+      padding: 0;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .platform-readonly {
+      display: none;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 7px 10px;
+      font-size: 13px;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .16);
+    }
+
+    body.range-view-active td:first-child select {
+      display: none;
+    }
+
+    body.range-view-active .platform-readonly {
+      display: inline-flex;
+    }
+
+    body.range-view-active tr.platform-shopee .platform-readonly {
+      background: #ff6b00;
+      border: 1px solid #ea580c;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(249, 115, 22, .26);
+    }
+
+    body.range-view-active tr.platform-lazada .platform-readonly {
+      background: #1d4ed8;
+      border: 1px solid #2563eb;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
+    }
+
+    body.range-view-active tr.platform-combo .platform-readonly {
+      background: linear-gradient(90deg, #ff6b00 0 50%, #1d4ed8 50% 100%);
+      border: 1px solid #0f172a;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .18);
+    }
+
+    body.range-view-active tr.platform-live .platform-readonly {
+      background: #f5b700;
+      border: 1px solid #d97706;
+      color: #2f1f00;
+      box-shadow: 0 8px 18px rgba(245, 183, 0, .28);
+    }
+
+    body.range-view-active tr.platform-no-income .platform-readonly {
+      background: #64748b;
+      border: 1px solid #475569;
+      color: #ffffff;
+      box-shadow: 0 8px 18px rgba(100, 116, 139, .24);
+    }
+
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      min-height: 38px;
+      font: inherit;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, .14);
+      outline: none;
+    }
+
+    input[type="number"] { text-align: right; }
+
+    .result {
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px 14px 14px;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 90px;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 700;
+      font-size: 13px;
+      background: #eef4ff;
+      color: var(--accent-2);
+    }
+
+    .status.good {
+      background: #ecfdf3;
+      color: var(--good);
+    }
+
+    .status.bad {
+      background: #fef3f2;
+      color: var(--bad);
+    }
+
+    .status.warn {
+      background: #fffaeb;
+      color: var(--warn);
+    }
+
+    dialog.confirm-dialog {
+      border: 0;
+      border-radius: 14px;
+      padding: 0;
+      width: min(420px, calc(100vw - 32px));
+      box-shadow: 0 28px 80px rgba(15, 23, 42, .32);
+      background: var(--panel);
+      color: var(--ink);
+    }
+
+    dialog.confirm-dialog::backdrop {
+      background: rgba(15, 23, 42, .46);
+    }
+
+    .confirm-content {
+      padding: 20px;
+      display: grid;
+      gap: 14px;
+    }
+
+    .confirm-content h2 {
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .confirm-content p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .confirm-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding-top: 4px;
+    }
+
+    tr.platform-shopee td:first-child select {
+      background: #ff6b00;
+      border-color: #ea580c;
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(249, 115, 22, .26);
+    }
+
+    tr.platform-lazada td:first-child select {
+      background: #1d4ed8;
+      border-color: #2563eb;
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(37, 99, 235, .24);
+    }
+
+    tr.platform-combo td:first-child select {
+      background: linear-gradient(90deg, #ff6b00 0 50%, #1d4ed8 50% 100%);
+      border-color: #0f172a;
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .18);
+    }
+
+    tr.platform-live td:first-child select {
+      background: #f5b700;
+      border-color: #d97706;
+      color: #2f1f00;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(245, 183, 0, .28);
+    }
+
+    tr.platform-no-income td:first-child select {
+      background: #64748b;
+      border-color: #475569;
+      color: #ffffff;
+      font-weight: 800;
+      box-shadow: 0 8px 18px rgba(100, 116, 139, .24);
+    }
+
+    @media (max-width: 900px) {
+      .summary { grid-template-columns: repeat(2, minmax(140px, 1fr)); }
+      .import-grid { grid-template-columns: repeat(2, minmax(220px, 1fr)); }
+      .hero-top { min-height: 0; }
+      #themeToggle,
+      .auth-card {
+        position: static;
+      }
+      .hero-top {
+        padding-left: 0;
+        justify-content: space-between;
+      }
+      .auth-card {
+        width: min(720px, 100%);
+        max-width: 100%;
+        grid-template-columns: 1fr;
+        border-radius: 14px;
+      }
+      .auth-actions {
+        justify-content: center;
+      }
+      .auth-status {
+        max-width: 100%;
+        white-space: normal;
+        text-align: center;
+      }
+      .auth-label {
+        text-align: center;
+      }
+      .brand-row {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 760px) {
+      header {
+        padding: 16px 12px 12px;
+      }
+
+      h1 {
+        font-size: 28px;
+      }
+
+      .hero {
+        gap: 10px;
+      }
+
+      .brand-row {
+        gap: 12px;
+        min-height: auto;
+      }
+
+      .logo-shell {
+        width: 76px;
+        border-radius: 16px;
+      }
+
+      .brand-logo {
+        width: 70px;
+        border-radius: 16px;
+      }
+
+      .subtitle {
+        font-size: 14px;
+      }
+
+      main {
+        padding: 12px 10px 32px;
+        gap: 14px;
+      }
+
+      .panel-heading {
+        padding: 14px;
+        align-items: flex-start;
+      }
+
+      .date-bar,
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr;
+        align-items: stretch;
+      }
+
+      .date-field,
+      .date-field.small,
+      .save-status {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .toolbar > div {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+        width: 100%;
+      }
+
+      .import-grid,
+      .summary {
+        padding: 12px;
+        gap: 10px;
+      }
+
+      .daily-chart {
+        margin: 0 12px 12px;
+      }
+
+      .daily-chart-head {
+        display: grid;
+      }
+
+      .chart-legend {
+        justify-content: flex-start;
+      }
+
+      .chart-bars {
+        grid-auto-columns: 58px;
+      }
+
+      .import-box,
+      .metric {
+        padding: 14px;
+      }
+
+      .metric {
+        min-height: auto;
+      }
+
+      input,
+      select,
+      .btn {
+        min-height: 44px;
+        font-size: 16px;
+      }
+
+      .table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      table {
+        min-width: 1320px;
+      }
+
+      .confirm-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .summary { grid-template-columns: 1fr; }
+      .date-bar { align-items: stretch; }
+      .toolbar { align-items: stretch; }
+      .search-bar { grid-template-columns: 1fr; }
+      .toolbar > div, .btn { width: 100%; justify-content: center; }
+      .import-grid { grid-template-columns: 1fr; }
+      .brand-row {
+        display: grid;
+        justify-items: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="hero">
+      <div class="hero-top">
+        <span class="hero-badge">Affiliate Ads Dashboard</span>
+        <button class="theme-switch" id="themeToggle" type="button" aria-label="สลับโหมดสว่างและมืด" title="สลับโหมดสว่างและมืด">
+          <span class="theme-icon theme-sun" aria-hidden="true">☀</span>
+          <span class="theme-icon theme-moon" aria-hidden="true">☾</span>
+        </button>
+      </div>
+      <div class="brand-row">
+        <div class="logo-shell">
+          <img class="brand-logo" src="affiliate-profit-logo-final.png" alt="Affiliate Profit Calculator logo">
+        </div>
+        <h1>Affiliate Profit Calculator</h1>
+      </div>
+      <p class="subtitle">คำนวณความคุ้มทุนของ Shopee / Lazada จากรายได้ ค่าแอด และยอดรวมของแต่ละ SUP เพื่อดูว่าแคมเปญไหนควรยิงต่อหรือควรหยุด</p>
+      <div class="auth-card signed-out" id="authCard">
+        <div class="auth-copy">
+          <span class="auth-label">สถานะบัญชี</span>
+          <span class="auth-status" id="authStatus">ยังไม่ได้เข้าสู่ระบบ</span>
+        </div>
+        <div class="auth-actions">
+          <button class="btn upload" id="loginGoogleBtn" type="button">G เข้าสู่ระบบ Google</button>
+          <button class="btn danger" id="logoutBtn" type="button" hidden>ออกจากระบบ</button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>นำเข้าข้อมูล</h2>
+          <p>อัปโหลดรายงาน affiliate และค่าแอด ระบบจะรวมตาม SUP ให้อัตโนมัติ</p>
+        </div>
+      </div>
+      <div class="import-grid">
+        <div class="import-box revenue shopee">
+          <span class="step-label">รายได้ 1</span>
+          <h2>Shopee Affiliate</h2>
+          <p>นำเข้ารายได้ Shopee: ใช้ชื่อ SUP จากคอลัมน์ AQ และรวมรายได้จากคอลัมน์ AE</p>
+          <input id="shopeeFile" type="file" accept=".xlsx,.xls,.csv">
+          <button class="btn upload" id="confirmShopeeUpload" type="button">↑ ยืนยันอัปโหลด Shopee</button>
+          <div class="import-status" id="shopeeStatus">ยังไม่ได้อัปโหลดไฟล์</div>
+        </div>
+
+        <div class="import-box revenue lazada">
+          <span class="step-label">รายได้ 2</span>
+          <h2>Lazada Affiliate</h2>
+          <p>นำเข้ารายได้ Lazada: ใช้ชื่อ SUP จากคอลัมน์ AP และรวมยอดจากคอลัมน์ W</p>
+          <input id="lazadaFile" type="file" accept=".xlsx,.xls,.csv">
+          <button class="btn upload" id="confirmLazadaUpload" type="button">↑ ยืนยันอัปโหลด Lazada</button>
+          <div class="import-status" id="lazadaStatus">ยังไม่ได้อัปโหลดไฟล์</div>
+        </div>
+
+        <div class="import-box cost facebook">
+          <span class="step-label">ต้นทุน 1</span>
+          <h2>Facebook Ads</h2>
+          <p>นำเข้าค่าแอด: อ่านชื่อ SUP จากคอลัมน์ C และรวมค่าแอดเข้าแถว SUP เดียวกัน</p>
+          <input id="facebookSpendColumn" type="text" placeholder="คอลัมน์ค่าแอด เช่น D หรือเว้นว่างให้เดาอัตโนมัติ">
+          <input id="facebookAdsFile" type="file" accept=".xlsx,.xls,.csv">
+          <button class="btn upload" id="confirmFacebookAdsUpload" type="button">↑ ยืนยันอัปโหลด Facebook Ads</button>
+          <div class="import-status" id="facebookAdsStatus">ยังไม่ได้อัปโหลดไฟล์</div>
+        </div>
+
+        <div class="import-box manual live">
+          <span class="step-label">ต้นทุน 2</span>
+          <h2>Live สด Ads</h2>
+          <p>กรอกค่าแอด Live สดแบบ manual ระบบจะรวมเข้าแถว Live สด ให้ทันที</p>
+          <input id="liveAdsCost" type="number" min="0" step="0.01" placeholder="ค่าแอด Live สด">
+          <button class="btn upload" id="confirmLiveAds" type="button">✓ ยืนยันค่าแอด Live สด</button>
+          <div class="import-status" id="liveAdsStatus">ยังไม่ได้กรอกค่าแอด</div>
+        </div>
+      </div>
+      <p class="note">ไฟล์ Excel ใช้ตัวอ่านไฟล์ในหน้าเว็บโดยตรง หากเปิดแบบออฟไลน์แล้วอ่าน .xlsx ไม่ได้ ให้เชื่อมต่ออินเทอร์เน็ตหนึ่งครั้ง หรือบันทึกไฟล์เป็น CSV แล้วอัปโหลดแทน</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>สรุปผลรายวัน</h2>
+          <p>เลือกวันที่ ดูย้อนหลัง เรียงกำไร/ขาดทุน และ export CSV</p>
+        </div>
+      </div>
+      <div class="date-bar">
+        <div class="date-field small">
+          <label for="recordDate">เลือกวันที่</label>
+          <input id="recordDate" type="date">
+        </div>
+        <div class="date-field small">
+          <label for="rangeEndDate">ถึงวันที่</label>
+          <input id="rangeEndDate" type="date">
+        </div>
+        <button class="btn upload" id="showDateRange" type="button">ค้นหา</button>
+        <div class="save-status" id="saveStatus">บันทึกอัตโนมัติตามวันที่</div>
+      </div>
+
+      <div class="toolbar">
+        <div>
+          <button class="btn primary" id="addRow" type="button">+ เพิ่มแคมเปญ</button>
+          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลด Excel</button>
+        </div>
+        <button class="btn danger" id="resetRows" type="button">ล้างข้อมูล</button>
+      </div>
+
+      <div class="search-bar">
+        <input id="campaignSearch" type="search" placeholder="ค้นหาชื่อแคมเปญ / SUP">
+        <div class="search-meta" id="searchMeta">แสดงทั้งหมด</div>
+      </div>
+
+      <div class="summary" aria-live="polite">
+        <div class="metric"><span>กำไรรวม</span><strong id="sumProfit">฿0.00</strong></div>
+        <div class="metric"><span>รายได้รวม</span><strong id="sumIncome">฿0.00</strong></div>
+        <div class="metric"><span>ค่าแอดรวม</span><strong id="sumAds">฿0.00</strong></div>
+        <div class="metric"><span>ROI รวม</span><strong id="sumRoi">0.00%</strong></div>
+        <div class="metric"><span>แคมเปญคุ้มทุน</span><strong id="sumWinners">0 / 0</strong></div>
+      </div>
+
+      <div class="daily-chart" aria-live="polite">
+        <div class="daily-chart-head">
+          <div>
+            <h3>กราฟยอดรายวัน</h3>
+            <p>แท่งเดียวแบ่งสีตามยอด Shopee, Lazada และ Live สด</p>
+          </div>
+          <div class="chart-legend">
+            <span><i class="legend-dot shopee"></i>Shopee</span>
+            <span><i class="legend-dot lazada"></i>Lazada</span>
+            <span><i class="legend-dot live"></i>Live สด</span>
+          </div>
+        </div>
+        <div class="chart-scroll">
+          <div class="chart-bars" id="dailyChartBars"></div>
+        </div>
+        <div class="chart-empty" id="dailyChartEmpty" hidden>ยังไม่มีข้อมูลสำหรับช่วงวันที่นี้</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>แพลตฟอร์ม</th>
+              <th>ชื่อแคมเปญ/สินค้า</th>
+              <th>ออเดอร์</th>
+              <th>ยอด Shopee</th>
+              <th>ยอด Lazada</th>
+              <th>ค่าแอด</th>
+              <th>รายได้รวม</th>
+              <th>กำไรสุทธิ</th>
+              <th><button class="sort-header" id="sortRoi" type="button">ROI ↕</button></th>
+              <th>ROAS</th>
+              <th>CPA</th>
+              <th><button class="sort-header" id="sortStatus" type="button">สถานะ ↕</button></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="campaignRows"></tbody>
+        </table>
+      </div>
+
+      <p class="note">
+        สูตรหลัก: รายได้รวม = ยอด Shopee + ยอด Lazada, กำไรสุทธิ = รายได้รวม - ค่าแอด, ROI = กำไรสุทธิ / ค่าแอด
+      </p>
+    </section>
+  </main>
+
+  <dialog class="confirm-dialog" id="confirmDialog">
+    <div class="confirm-content">
+      <h2 id="confirmTitle">ยืนยันการทำรายการ</h2>
+      <p id="confirmMessage">ต้องการดำเนินการต่อหรือไม่</p>
+      <div class="confirm-actions">
+        <button class="btn" id="cancelConfirm" type="button">ยกเลิก</button>
+        <button class="btn upload" id="acceptConfirm" type="button">ยืนยัน</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script>
+    const rowsEl = document.getElementById("campaignRows");
+    const storageKey = "affiliate-profit-calculator-v1";
+    const dailyStorageKey = "affiliate-profit-calculator-daily-v1";
+    const dateInput = document.getElementById("recordDate");
+    const rangeEndInput = document.getElementById("rangeEndDate");
+    const saveStatusEl = document.getElementById("saveStatus");
+    const dailyChartBarsEl = document.getElementById("dailyChartBars");
+    const dailyChartEmptyEl = document.getElementById("dailyChartEmpty");
+    const themeStorageKey = "affiliate-profit-calculator-theme-v1";
+    const viewStorageKey = "affiliate-profit-calculator-view-v1";
+    const supabaseUrl = "https://txbsrtunejnqaheuohck.supabase.co";
+    const supabaseKey = "sb_publishable_sEfsAWiZU83ZWgFviwzskg_Nyj4eUR2";
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    let selectedDate = todayDate();
+    let isLoadingRows = false;
+    let isSavingRows = false;
+    let pendingSaveRows = false;
+    let statusSortMode = "none";
+    let roiSortMode = "none";
+    let pendingShopeeFile = null;
+    let pendingLazadaFile = null;
+    let pendingFacebookAdsFile = null;
+    let searchQuery = "";
+    let pendingConfirmAction = null;
+    let isRangeView = false;
+    let currentUser = null;
+
+    let latestLoadToken = 0;
+    function todayDate() {
+      const now = new Date();
+      const timezoneOffset = now.getTimezoneOffset() * 60000;
+      return new Date(now.getTime() - timezoneOffset).toISOString().slice(0, 10);
+    }
+
+    function eachDateInRange(startDate, endDate) {
+      const dates = [];
+      const [startYear, startMonth, startDay] = startDate.split("-").map(Number);
+      const [endYear, endMonth, endDay] = endDate.split("-").map(Number);
+      const start = new Date(startYear, startMonth - 1, startDay);
+      const end = new Date(endYear, endMonth - 1, endDay);
+      if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) return dates;
+      for (let cursor = start; cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+        const year = cursor.getFullYear();
+        const month = String(cursor.getMonth() + 1).padStart(2, "0");
+        const day = String(cursor.getDate()).padStart(2, "0");
+        dates.push(`${year}-${month}-${day}`);
+      }
+      return dates;
+    }
+
+    function readDailyStore() {
+      try {
+        return JSON.parse(localStorage.getItem(dailyStorageKey) || "{}") || {};
+      } catch {
+        return {};
+      }
+    }
+
+    function writeDailyStore(store) {
+      localStorage.setItem(dailyStorageKey, JSON.stringify(store));
+    }
+
+    function readSavedView() {
+      try {
+        const view = JSON.parse(localStorage.getItem(viewStorageKey) || "null");
+        return view && view.startDate ? view : null;
+      } catch {
+        return null;
+      }
+    }
+
+    function saveCurrentView(startDate = dateInput.value || selectedDate, endDate = rangeEndInput.value || startDate) {
+      localStorage.setItem(viewStorageKey, JSON.stringify({ startDate, endDate }));
+    }
+
+    async function loadCurrentView() {
+      const startDate = dateInput.value || selectedDate || todayDate();
+      const endDate = rangeEndInput.value || startDate;
+      if (startDate === endDate) await loadRowsForDate(startDate);
+      else await loadRowsForDateRange(startDate, endDate);
+    }
+
+    function updateEditState() {
+      const isReadOnly = isRangeView;
+      document.body.classList.toggle("range-view-active", isReadOnly);
+      const addButton = document.getElementById("addRow");
+      const resetButton = document.getElementById("resetRows");
+      if (addButton) {
+        addButton.disabled = isReadOnly;
+        addButton.title = isReadOnly ? "มุมมองหลายวันเพิ่มแคมเปญไม่ได้ กรุณาเลือกวันเดียวก่อน" : "";
+      }
+      if (resetButton) {
+        resetButton.disabled = isReadOnly;
+        resetButton.title = isReadOnly ? "มุมมองหลายวันล้างข้อมูลไม่ได้ กรุณาเลือกวันเดียวก่อน" : "";
+      }
+      rowsEl.querySelectorAll("input, select, [data-delete]").forEach((control) => {
+        control.disabled = isReadOnly;
+        control.title = isReadOnly ? "มุมมองหลายวันเป็นโหมดดูอย่างเดียว" : "";
+      });
+    }
+
+    function setAuthStatus(message) {
+      document.getElementById("authStatus").textContent = message;
+    }
+
+    function setAuthUi(user) {
+      currentUser = user;
+      const authCard = document.getElementById("authCard");
+      document.getElementById("loginGoogleBtn").hidden = Boolean(user);
+      document.getElementById("logoutBtn").hidden = !user;
+      if (authCard) {
+        authCard.classList.toggle("signed-in", Boolean(user));
+        authCard.classList.toggle("signed-out", !user);
+      }
+      setAuthStatus(user ? `เชื่อมต่อแล้ว: ${user.email || user.id}` : "ยังไม่ได้เข้าสู่ระบบ");
+    }
+
+    function authRedirectTo() {
+      const url = new URL(window.location.href);
+      url.hash = "";
+      return url.href;
+    }
+
+    async function findCampaignRecord(date) {
+      if (!currentUser) return null;
+      const { data, error } = await supabaseClient
+        .from("campaign_data")
+        .select("id, data")
+        .eq("user_id", currentUser.id)
+        .eq("record_date", date)
+        .order("created_at", { ascending: false })
+        .limit(1);
+      if (error) throw error;
+      return data && data.length ? data[0] : null;
+    }
+
+    async function upsertCampaignRows(date, rows) {
+      if (!currentUser) return;
+      const existing = await findCampaignRecord(date);
+      if (existing) {
+        const { error } = await supabaseClient
+          .from("campaign_data")
+          .update({ data: rows })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabaseClient
+          .from("campaign_data")
+          .insert({
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+            user_id: currentUser.id,
+            record_date: date,
+            data: rows
+          });
+        if (error) throw error;
+      }
+    }
+
+    async function deleteCampaignRows(date) {
+      if (!currentUser) return;
+      const { error } = await supabaseClient
+        .from("campaign_data")
+        .delete()
+        .eq("user_id", currentUser.id)
+        .eq("record_date", date);
+      if (error) throw error;
+    }
+
+    async function fetchCampaignRows(date) {
+      const existing = await findCampaignRecord(date);
+      return existing && Array.isArray(existing.data) ? existing.data : [];
+    }
+
+    async function fetchCampaignRecordsRange(startDate, endDate) {
+      if (!currentUser) return [];
+      const { data, error } = await supabaseClient
+        .from("campaign_data")
+        .select("record_date, data")
+        .eq("user_id", currentUser.id)
+        .gte("record_date", startDate)
+        .lte("record_date", endDate)
+        .order("record_date", { ascending: true });
+      if (error) throw error;
+      return data || [];
+    }
+
+    async function fetchCampaignRowsRange(startDate, endDate) {
+      const records = await fetchCampaignRecordsRange(startDate, endDate);
+      return records.flatMap((record) => Array.isArray(record.data) ? record.data : []);
+    }
+
+    async function migrateLocalRowsToSupabase() {
+      if (!currentUser) return;
+      const store = readDailyStore();
+      const entries = Object.entries(store).filter(([, rows]) => Array.isArray(rows) && rows.length);
+      for (const [date, rows] of entries) {
+        const existing = await findCampaignRecord(date);
+        if (!existing) await upsertCampaignRows(date, rows);
+      }
+    }
+
+    function applyTheme(theme) {
+      document.body.classList.toggle("dark", theme === "dark");
+      const themeToggle = document.getElementById("themeToggle");
+      themeToggle.setAttribute("aria-label", theme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด");
+      themeToggle.title = theme === "dark" ? "เปลี่ยนเป็นโหมดสว่าง" : "เปลี่ยนเป็นโหมดมืด";
+      localStorage.setItem(themeStorageKey, theme);
+    }
+
+    function mergeRowsForRange(rows) {
+      const groups = new Map();
+      rows.forEach((row) => {
+        const name = cellText(row.name) || "ไม่ระบุ SUP";
+        const key = normalizeSupName(name);
+        if (!groups.has(key)) {
+          groups.set(key, {
+            platform: row.platform || "อื่น ๆ",
+            name,
+            orders: 0,
+            shopeeIncome: 0,
+            lazadaIncome: 0,
+            adCost: 0
+          });
+        }
+        const group = groups.get(key);
+        group.orders += Number(row.orders || 0);
+        group.shopeeIncome += Number(row.shopeeIncome || 0);
+        group.lazadaIncome += Number(row.lazadaIncome || 0);
+        group.adCost += Number(row.adCost || 0);
+        group.platform = platformFromRow(group);
+      });
+      return [...groups.values()].sort((a, b) => a.name.localeCompare(b.name, "th"));
+    }
+
+    function askConfirm(title, message, onAccept) {
+      pendingConfirmAction = onAccept;
+      document.getElementById("confirmTitle").textContent = title;
+      document.getElementById("confirmMessage").textContent = message;
+      document.getElementById("confirmDialog").showModal();
+    }
+
+    function migrateOldRowsToToday() {
+      const store = readDailyStore();
+      if (store[todayDate()]) return;
+      try {
+        const oldRows = JSON.parse(localStorage.getItem(storageKey) || "null");
+        if (Array.isArray(oldRows) && oldRows.length) {
+          store[todayDate()] = oldRows;
+          writeDailyStore(store);
+        }
+      } catch {
+        // Ignore old malformed saves.
+      }
+    }
+
+    function money(value) {
+      return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB" }).format(value || 0);
+    }
+
+    function percent(value) {
+      if (!Number.isFinite(value)) return "0.00%";
+      return `${value.toFixed(2)}%`;
+    }
+
+    function numberValue(input) {
+      return Number(input.value || 0);
+    }
+
+    function escapeAttr(value) {
+      return String(value || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function columnLettersToIndex(letters) {
+      return letters.toUpperCase().split("").reduce((total, letter) => {
+        return total * 26 + letter.charCodeAt(0) - 64;
+      }, 0) - 1;
+    }
+
+    function parseMoneyCell(value) {
+      if (typeof value === "number") return Number.isFinite(value) ? value : 0;
+      if (value === null || value === undefined) return 0;
+      const cleaned = String(value).replace(/,/g, "").replace(/[^\d.-]/g, "");
+      const number = Number(cleaned);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function sumColumn(rows, columnLetters) {
+      const index = columnLettersToIndex(columnLetters);
+      return rows.reduce((total, row) => total + parseMoneyCell(row[index]), 0);
+    }
+
+    function countFilledRows(rows, columnLetters) {
+      const index = columnLettersToIndex(columnLetters);
+      return rows.filter((row) => parseMoneyCell(row[index]) !== 0).length;
+    }
+
+    function cellText(value) {
+      return String(value ?? "").trim();
+    }
+
+    function groupRowsBySup(rows, supColumnLetters, valueColumnLetters, fallbackSupName = "ไม่ระบุ SUP") {
+      const supIndex = columnLettersToIndex(supColumnLetters);
+      const valueIndex = columnLettersToIndex(valueColumnLetters);
+      const groups = new Map();
+
+      rows.forEach((row) => {
+        const value = parseMoneyCell(row[valueIndex]);
+        if (value === 0) return;
+        const supName = cellText(row[supIndex]) || fallbackSupName;
+        if (!groups.has(supName)) {
+          groups.set(supName, { supName, total: 0, orders: 0 });
+        }
+        const group = groups.get(supName);
+        group.total += value;
+        group.orders += 1;
+      });
+
+      return [...groups.values()].sort((a, b) => b.total - a.total);
+    }
+
+    function normalizeSupName(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function mergedPlatform(currentPlatform, incomingPlatform) {
+      if (!currentPlatform || currentPlatform === incomingPlatform) return incomingPlatform;
+      if (currentPlatform === "อื่น ๆ") return incomingPlatform;
+      if (incomingPlatform === "อื่น ๆ") return currentPlatform;
+      if (currentPlatform === "Live สด" || incomingPlatform === "Live สด") return "Live สด";
+      if (currentPlatform.includes("Shopee") && incomingPlatform.includes("Lazada")) return "Shopee + Lazada";
+      if (currentPlatform.includes("Lazada") && incomingPlatform.includes("Shopee")) return "Shopee + Lazada";
+      return currentPlatform;
+    }
+
+    function platformFromRow(row) {
+      const shopeeIncome = Number(row.shopeeIncome || 0);
+      const lazadaIncome = Number(row.lazadaIncome || 0);
+      if (row.name === "Live สด" || row.platform === "Live สด") return "Live สด";
+      if (shopeeIncome > 0 && lazadaIncome > 0) return "Shopee + Lazada";
+      if (shopeeIncome > 0) return "Shopee";
+      if (lazadaIncome > 0) return "Lazada";
+      return "ไม่มียอด";
+    }
+
+    function addOrMergeImportedRow(row) {
+      const targetName = normalizeSupName(row.name);
+      const existingRow = [...rowsEl.querySelectorAll("tr")].find((tr) => {
+        return normalizeSupName(tr.querySelector('[name="name"]').value) === targetName;
+      });
+
+      if (!existingRow) {
+        addRow(row);
+        return;
+      }
+
+      const platformInput = existingRow.querySelector('[name="platform"]');
+      const ordersInput = existingRow.querySelector('[name="orders"]');
+      const shopeeIncomeInput = existingRow.querySelector('[name="shopeeIncome"]');
+      const lazadaIncomeInput = existingRow.querySelector('[name="lazadaIncome"]');
+      const adCostInput = existingRow.querySelector('[name="adCost"]');
+
+      ordersInput.value = numberValue(ordersInput) + Number(row.orders || 0);
+      shopeeIncomeInput.value = numberValue(shopeeIncomeInput) + Number(row.shopeeIncome || 0);
+      lazadaIncomeInput.value = numberValue(lazadaIncomeInput) + Number(row.lazadaIncome || 0);
+      adCostInput.value = numberValue(adCostInput) + Number(row.adCost || 0);
+      platformInput.value = platformFromRow({
+        platform: mergedPlatform(platformInput.value, row.platform),
+        name: existingRow.querySelector('[name="name"]').value,
+        shopeeIncome: numberValue(shopeeIncomeInput),
+        lazadaIncome: numberValue(lazadaIncomeInput)
+      });
+      updateAll({ reorder: true });
+    }
+
+    function csvToRows(text) {
+      const rows = [];
+      let row = [];
+      let cell = "";
+      let quoted = false;
+
+      for (let i = 0; i < text.length; i += 1) {
+        const char = text[i];
+        const next = text[i + 1];
+        if (char === '"' && quoted && next === '"') {
+          cell += '"';
+          i += 1;
+        } else if (char === '"') {
+          quoted = !quoted;
+        } else if (char === "," && !quoted) {
+          row.push(cell);
+          cell = "";
+        } else if ((char === "\n" || char === "\r") && !quoted) {
+          if (char === "\r" && next === "\n") i += 1;
+          row.push(cell);
+          if (row.some((item) => String(item).trim() !== "")) rows.push(row);
+          row = [];
+          cell = "";
+        } else {
+          cell += char;
+        }
+      }
+
+      row.push(cell);
+      if (row.some((item) => String(item).trim() !== "")) rows.push(row);
+      return rows;
+    }
+
+    async function readUploadRows(file) {
+      const extension = file.name.split(".").pop().toLowerCase();
+      if (extension === "csv") {
+        return csvToRows(await file.text());
+      }
+      if (!window.XLSX) {
+        throw new Error("ยังโหลดตัวอ่าน Excel ไม่สำเร็จ ลองเชื่อมต่ออินเทอร์เน็ต หรือบันทึกไฟล์เป็น CSV ก่อนอัปโหลด");
+      }
+      const bytes = await file.arrayBuffer();
+      const workbook = XLSX.read(bytes, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: "" });
+    }
+
+    function extractSupAfterUnderscore(value) {
+      const text = cellText(value);
+      if (!text) return "";
+      const underscoreIndex = text.indexOf("_");
+      const afterUnderscore = underscoreIndex >= 0 ? text.slice(underscoreIndex + 1) : text;
+      return afterUnderscore
+        .split(" - ")[0]
+        .split("-")[0]
+        .trim();
+    }
+
+    function detectSpendColumn(rows) {
+      const keywords = ["amount spent", "spend", "cost", "ค่าใช้จ่าย", "จำนวนเงินที่ใช้จ่าย", "ยอดใช้จ่าย", "เงินที่ใช้"];
+      const maxRows = Math.min(rows.length, 10);
+      for (let rowIndex = 0; rowIndex < maxRows; rowIndex += 1) {
+        const row = rows[rowIndex] || [];
+        for (let columnIndex = 0; columnIndex < row.length; columnIndex += 1) {
+          const header = cellText(row[columnIndex]).toLowerCase();
+          if (keywords.some((keyword) => header.includes(keyword))) {
+            return columnIndex;
+          }
+        }
+      }
+      return -1;
+    }
+
+    function groupFacebookAdsRows(rows, spendColumnLetters) {
+      const nameIndex = columnLettersToIndex("C");
+      const spendIndex = spendColumnLetters ? columnLettersToIndex(spendColumnLetters) : detectSpendColumn(rows);
+      if (spendIndex < 0) {
+        throw new Error("ไม่พบคอลัมน์ค่าแอด กรุณาใส่ตัวอักษรคอลัมน์ค่าแอด เช่น D, E, F");
+      }
+
+      const groups = new Map();
+      rows.forEach((row) => {
+        const supName = extractSupAfterUnderscore(row[nameIndex]);
+        const adCost = parseMoneyCell(row[spendIndex]);
+        if (!supName || adCost === 0) return;
+        if (!groups.has(supName)) {
+          groups.set(supName, { supName, adCost: 0, rows: 0 });
+        }
+        const group = groups.get(supName);
+        group.adCost += adCost;
+        group.rows += 1;
+      });
+
+      return [...groups.values()].sort((a, b) => b.adCost - a.adCost);
+    }
+
+    async function importFacebookAdsFile(file, statusEl) {
+      statusEl.textContent = "กำลังอ่านไฟล์ค่าแอด...";
+      try {
+        const rows = await readUploadRows(file);
+        if (!rows.length) throw new Error("ไม่พบข้อมูลในไฟล์ค่าแอด");
+        const spendColumn = document.getElementById("facebookSpendColumn").value.trim();
+        const groups = groupFacebookAdsRows(rows, spendColumn);
+        if (!groups.length) throw new Error("ไม่พบ SUP จากคอลัมน์ C หรือไม่พบยอดค่าแอด");
+
+        groups.forEach((group) => {
+          addOrMergeImportedRow({
+            platform: "ไม่มียอด",
+            name: group.supName,
+            orders: 0,
+            shopeeIncome: 0,
+            lazadaIncome: 0,
+            adCost: group.adCost
+          });
+        });
+
+        const totalAds = groups.reduce((total, group) => total + group.adCost, 0);
+        statusEl.textContent = `เพิ่มค่าแอด Facebook แล้ว ${groups.length} SUP: รวมค่าแอด ${money(totalAds)}`;
+      } catch (error) {
+        statusEl.textContent = error.message || "อ่านไฟล์ค่าแอดไม่สำเร็จ";
+        statusEl.className = "import-status bad";
+      }
+    }
+
+    async function importAffiliateFile(platform, file, statusEl) {
+      statusEl.textContent = "กำลังอ่านไฟล์...";
+      try {
+        const rows = await readUploadRows(file);
+        if (!rows.length) throw new Error("ไม่พบข้อมูลในไฟล์");
+
+        if (platform === "Shopee") {
+          const groups = groupRowsBySup(rows, "AQ", "AE", "Live สด");
+          if (!groups.length) throw new Error("ไม่พบรายได้ในคอลัมน์ AE สำหรับจัดกลุ่มตาม SUP AQ");
+          groups.forEach((group) => {
+            addOrMergeImportedRow({
+              platform: group.supName === "Live สด" ? "Live สด" : "Shopee",
+              name: group.supName,
+              orders: group.orders,
+              shopeeIncome: group.total,
+              lazadaIncome: 0,
+              adCost: 0,
+            });
+          });
+          const totalIncome = groups.reduce((total, group) => total + group.total, 0);
+          statusEl.textContent = `เพิ่ม Shopee แล้ว ${groups.length} SUP: รวมรายได้ AE ${money(totalIncome)}`;
+          return;
+        }
+
+        const groups = groupRowsBySup(rows, "AP", "W");
+        if (!groups.length) throw new Error("ไม่พบยอดขายในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AP");
+        groups.forEach((group) => {
+          addOrMergeImportedRow({
+            platform: "Lazada",
+            name: group.supName,
+            orders: group.orders,
+            shopeeIncome: 0,
+            lazadaIncome: group.total,
+            adCost: 0,
+          });
+        });
+        const totalSales = groups.reduce((total, group) => total + group.total, 0);
+        statusEl.textContent = `เพิ่ม Lazada แล้ว ${groups.length} SUP: รวมรายได้ W ${money(totalSales)} และนำไปคิดกำไรรวมแล้ว`;
+      } catch (error) {
+        statusEl.textContent = error.message || "อ่านไฟล์ไม่สำเร็จ";
+        statusEl.className = "import-status bad";
+      }
+    }
+
+    function calculate(row) {
+      const orders = Number(row.orders || 0);
+      const shopeeIncome = Number(row.shopeeIncome || 0);
+      const lazadaIncome = Number(row.lazadaIncome || 0);
+      const adCost = Number(row.adCost || 0);
+      const income = shopeeIncome + lazadaIncome;
+      const totalCost = adCost;
+      const profit = income - totalCost;
+      const roi = totalCost > 0 ? profit / totalCost * 100 : 0;
+      const roas = adCost > 0 ? income / adCost : 0;
+      const cpa = orders > 0 ? adCost / orders : 0;
+      return { income, totalCost, profit, roi, roas, cpa };
+    }
+
+    function summarizeRowsForChart(date, rows) {
+      return (rows || []).reduce((summary, row) => {
+        const platform = platformFromRow(row);
+        summary.shopee += Number(row.shopeeIncome || 0);
+        summary.lazada += Number(row.lazadaIncome || 0);
+        if (platform === "Live สด") summary.live += Number(row.adCost || 0);
+        summary.total = summary.shopee + summary.lazada + summary.live;
+        return summary;
+      }, { date, shopee: 0, lazada: 0, live: 0, total: 0 });
+    }
+
+    function chartSegment(className, value, maxTotal, label) {
+      if (value <= 0 || maxTotal <= 0) return "";
+      const height = value / maxTotal * 100;
+      return `<div class="bar-segment ${className}" style="height:${height}%" title="${label}: ${money(value)}"></div>`;
+    }
+
+    function renderDailyChart(days) {
+      if (!dailyChartBarsEl || !dailyChartEmptyEl) return;
+      const chartDays = (days || []).filter((day) => day && day.total > 0);
+      dailyChartEmptyEl.hidden = chartDays.length > 0;
+      dailyChartBarsEl.innerHTML = "";
+      if (!chartDays.length) return;
+
+      const maxTotal = Math.max(...chartDays.map((day) => day.total), 1);
+      dailyChartBarsEl.style.minWidth = `${Math.max(100, chartDays.length * 64)}px`;
+      dailyChartBarsEl.innerHTML = chartDays.map((day) => {
+        const label = day.date.slice(5);
+        const fullTitle = [
+          day.date,
+          `Shopee: ${money(day.shopee)}`,
+          `Lazada: ${money(day.lazada)}`,
+          `Live สด: ${money(day.live)}`,
+          `รวม: ${money(day.total)}`
+        ].join("\n");
+        return `
+          <div class="chart-day" title="${escapeAttr(fullTitle)}">
+            <div class="bar-stack">
+              ${chartSegment("shopee", day.shopee, maxTotal, "Shopee")}
+              ${chartSegment("lazada", day.lazada, maxTotal, "Lazada")}
+              ${chartSegment("live", day.live, maxTotal, "Live สด")}
+            </div>
+            <div class="bar-label">${escapeAttr(label)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function getRowsFromDom() {
+      return [...rowsEl.querySelectorAll("tr")].map((tr) => ({
+        platform: tr.querySelector('[name="platform"]').value,
+        name: tr.querySelector('[name="name"]').value,
+        orders: numberValue(tr.querySelector('[name="orders"]')),
+        shopeeIncome: numberValue(tr.querySelector('[name="shopeeIncome"]')),
+        lazadaIncome: numberValue(tr.querySelector('[name="lazadaIncome"]')),
+        adCost: numberValue(tr.querySelector('[name="adCost"]'))
+      }));
+    }
+
+    async function saveRows() {
+      if (isLoadingRows || isRangeView) return;
+      if (!selectedDate) return;
+      const rows = getRowsFromDom();
+      localStorage.setItem(storageKey, JSON.stringify(rows));
+      const store = readDailyStore();
+      if (rows.length) store[selectedDate] = rows;
+      else delete store[selectedDate];
+      writeDailyStore(store);
+      if (!currentUser) {
+        if (saveStatusEl) saveStatusEl.textContent = "ยังไม่ได้เข้าสู่ระบบ จึงยังไม่บันทึกขึ้น Supabase";
+        return;
+      }
+      if (isSavingRows) {
+        pendingSaveRows = true;
+        return;
+      }
+      isSavingRows = true;
+      if (saveStatusEl) {
+        const rowCount = rows.length;
+        saveStatusEl.textContent = `กำลังบันทึกวันที่ ${selectedDate}...`;
+      }
+      try {
+        if (rows.length) await upsertCampaignRows(selectedDate, rows);
+        else await deleteCampaignRows(selectedDate);
+        if (saveStatusEl) {
+          const rowCount = rows.length;
+          saveStatusEl.textContent = rowCount
+            ? `บันทึก Supabase วันที่ ${selectedDate} แล้ว (${rowCount} แถว)`
+            : `ล้างข้อมูล Supabase วันที่ ${selectedDate} แล้ว`;
+        }
+      } catch (error) {
+        console.error(error);
+        if (saveStatusEl) saveStatusEl.textContent = `บันทึก Supabase ไม่สำเร็จ: ${error.message || error}`;
+      } finally {
+        isSavingRows = false;
+        if (pendingSaveRows) {
+          pendingSaveRows = false;
+          saveRows();
+        }
+      }
+    }
+
+    async function loadRowsForDate(date) {
+      const loadToken = ++latestLoadToken;
+      isRangeView = false;
+      selectedDate = date;
+      let rows = [];
+      let loadedFromSupabase = false;
+      try {
+        const store = readDailyStore();
+        const localRows = Array.isArray(store[date]) ? store[date] : [];
+        if (currentUser) {
+          rows = await fetchCampaignRows(date);
+          loadedFromSupabase = true;
+          if (!rows.length && localRows.length) {
+            rows = localRows;
+            loadedFromSupabase = false;
+          }
+        } else {
+          rows = localRows;
+        }
+      } catch (error) {
+        console.error(error);
+        const store = readDailyStore();
+        rows = Array.isArray(store[date]) ? store[date] : [];
+        loadedFromSupabase = false;
+        if (saveStatusEl) saveStatusEl.textContent = `โหลด Supabase ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน: ${error.message || error}`;
+      }
+      if (loadToken !== latestLoadToken) return;
+      saveCurrentView(date, date);
+      isLoadingRows = true;
+      rowsEl.innerHTML = "";
+      rows.forEach(addRow);
+      updateAll();
+      isLoadingRows = false;
+      keepLiveFirst();
+      applySearchFilter();
+      renderDailyChart([summarizeRowsForChart(date, rows)]);
+      updateEditState();
+      if (saveStatusEl) {
+        if (rows.length) {
+          saveStatusEl.textContent = `${loadedFromSupabase ? "โหลดจาก Supabase" : "โหลดจากเครื่อง"} วันที่ ${date} (${rows.length} แถว)`;
+        } else {
+          saveStatusEl.textContent = `วันที่ ${date} ยังไม่มีข้อมูล`;
+        }
+      }
+    }
+
+    async function loadRowsForDateRange(startDate, endDate) {
+      const loadToken = ++latestLoadToken;
+      selectedDate = startDate;
+      const dates = eachDateInRange(startDate, endDate);
+      if (!dates.length) {
+        saveStatusEl.textContent = "ช่วงวันที่ไม่ถูกต้อง";
+        return;
+      }
+      let allRows = [];
+      let chartDays = [];
+      try {
+        const store = readDailyStore();
+        const localRowsByDate = new Map(dates.map((date) => [date, Array.isArray(store[date]) ? store[date] : []]));
+        const localRows = dates.flatMap((date) => localRowsByDate.get(date));
+        chartDays = dates.map((date) => summarizeRowsForChart(date, localRowsByDate.get(date)));
+        if (currentUser) {
+          const records = await fetchCampaignRecordsRange(startDate, endDate);
+          const remoteRowsByDate = new Map(dates.map((date) => [date, []]));
+          records.forEach((record) => {
+            if (Array.isArray(record.data)) remoteRowsByDate.set(record.record_date, record.data);
+          });
+          allRows = dates.flatMap((date) => remoteRowsByDate.get(date) || []);
+          chartDays = dates.map((date) => summarizeRowsForChart(date, remoteRowsByDate.get(date) || []));
+          if (!allRows.length && localRows.length) {
+            allRows = localRows;
+            chartDays = dates.map((date) => summarizeRowsForChart(date, localRowsByDate.get(date)));
+          }
+        } else {
+          allRows = localRows;
+        }
+      } catch (error) {
+        console.error(error);
+        const store = readDailyStore();
+        const localRowsByDate = new Map(dates.map((date) => [date, Array.isArray(store[date]) ? store[date] : []]));
+        allRows = dates.flatMap((date) => localRowsByDate.get(date));
+        chartDays = dates.map((date) => summarizeRowsForChart(date, localRowsByDate.get(date)));
+        saveStatusEl.textContent = allRows.length
+          ? `โหลดช่วงวันที่จาก Supabase ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน: ${error.message || error}`
+          : `โหลดช่วงวันที่จาก Supabase ไม่สำเร็จ: ${error.message || error}`;
+      }
+      if (loadToken !== latestLoadToken) return;
+      saveCurrentView(startDate, endDate);
+      const mergedRows = mergeRowsForRange(allRows);
+      isRangeView = true;
+      isLoadingRows = true;
+      rowsEl.innerHTML = "";
+      mergedRows.forEach(addRow);
+      updateAll();
+      isLoadingRows = false;
+      keepLiveFirst();
+      applySearchFilter();
+      renderDailyChart(chartDays);
+      updateEditState();
+      saveStatusEl.textContent = mergedRows.length
+        ? `ดูยอดรวม ${startDate} ถึง ${endDate} (${mergedRows.length} SUP จาก ${dates.length} วัน)`
+        : `ช่วง ${startDate} ถึง ${endDate} ยังไม่มีข้อมูล`;
+    }
+
+    async function ensureSelectedSingleDateLoaded() {
+      const targetDate = dateInput.value || selectedDate || todayDate();
+      if (isRangeView || selectedDate !== targetDate || rangeEndInput.value !== targetDate) {
+        rangeEndInput.value = targetDate;
+        await saveRows();
+        await loadRowsForDate(targetDate);
+      }
+      return targetDate;
+    }
+
+    function statusFor(result) {
+      if (result.profit > 0) return { text: "คุ้ม", className: "good" };
+      if (Math.abs(result.profit) < 0.01) return { text: "เท่าทุน", className: "warn" };
+      return { text: "ขาดทุน", className: "bad" };
+    }
+
+    function platformClass(platform) {
+      if (platform === "Live สด") return "platform-live";
+      if (platform === "ไม่มียอด") return "platform-no-income";
+      if (platform === "Shopee + Lazada") return "platform-combo";
+      if (platform.includes("Shopee")) return "platform-shopee";
+      if (platform.includes("Lazada")) return "platform-lazada";
+      return "";
+    }
+
+    function statusRank(result) {
+      if (result.profit > 0) return 0;
+      if (Math.abs(result.profit) < 0.01) return 1;
+      return 2;
+    }
+
+    function liveFirstRank(row) {
+      return platformFromRow(row) === "Live สด" || row.name === "Live สด" ? 0 : 1;
+    }
+
+    function applyStatusSort() {
+      if (statusSortMode === "none") return;
+      const rows = [...rowsEl.querySelectorAll("tr")].map((tr, index) => {
+        const row = getRowsFromDom()[index];
+        return { tr, row, rank: statusRank(calculate(row)) };
+      });
+      const direction = statusSortMode === "goodFirst" ? 1 : -1;
+      rows
+        .sort((a, b) => liveFirstRank(a.row) - liveFirstRank(b.row) || (a.rank - b.rank) * direction || a.row.name.localeCompare(b.row.name, "th"))
+        .forEach((item) => rowsEl.appendChild(item.tr));
+    }
+
+    function applyRoiSort() {
+      if (roiSortMode === "none") return;
+      const rows = [...rowsEl.querySelectorAll("tr")].map((tr, index) => {
+        const row = getRowsFromDom()[index];
+        return { tr, row, result: calculate(row) };
+      });
+      rows
+        .sort((a, b) => {
+          const liveDiff = liveFirstRank(a.row) - liveFirstRank(b.row);
+          if (liveDiff) return liveDiff;
+          const diff = roiSortMode === "bestFirst"
+            ? b.result.roi - a.result.roi
+            : a.result.roi - b.result.roi;
+          return diff || a.row.name.localeCompare(b.row.name, "th");
+        })
+        .forEach((item) => rowsEl.appendChild(item.tr));
+    }
+
+    function keepLiveFirst() {
+      const rows = [...rowsEl.querySelectorAll("tr")].map((tr, index) => ({
+        tr,
+        row: getRowsFromDom()[index],
+        index
+      }));
+      rows
+        .sort((a, b) => liveFirstRank(a.row) - liveFirstRank(b.row) || a.index - b.index)
+        .forEach((item) => rowsEl.appendChild(item.tr));
+    }
+
+    function applySearchFilter() {
+      const query = searchQuery.trim().toLowerCase();
+      let visibleCount = 0;
+      let totalCount = 0;
+      rowsEl.querySelectorAll("tr").forEach((tr) => {
+        totalCount += 1;
+        const campaignName = tr.querySelector('[name="name"]').value.toLowerCase();
+        const isVisible = !query || campaignName.includes(query);
+        tr.hidden = !isVisible;
+        if (isVisible) visibleCount += 1;
+      });
+      document.getElementById("searchMeta").textContent = query
+        ? `พบ ${visibleCount} / ${totalCount} แถว`
+        : "แสดงทั้งหมด";
+    }
+
+    function captureActiveField() {
+      const active = document.activeElement;
+      if (!active || !rowsEl.contains(active) || !["INPUT", "SELECT"].includes(active.tagName)) return null;
+      const state = { element: active };
+      try {
+        if (typeof active.selectionStart === "number") {
+          state.selectionStart = active.selectionStart;
+          state.selectionEnd = active.selectionEnd;
+        }
+      } catch {}
+      return state;
+    }
+
+    function restoreActiveField(state) {
+      if (!state || !state.element || !document.body.contains(state.element)) return;
+      if (document.activeElement !== state.element) state.element.focus({ preventScroll: true });
+      try {
+        if (typeof state.selectionStart === "number" && typeof state.element.setSelectionRange === "function") {
+          state.element.setSelectionRange(state.selectionStart, state.selectionEnd);
+        }
+      } catch {}
+    }
+
+    function reorderTableRows() {
+      if (roiSortMode !== "none") applyRoiSort();
+      else if (statusSortMode !== "none") applyStatusSort();
+      else keepLiveFirst();
+    }
+
+    function updateAll(options = {}) {
+      const activeField = captureActiveField();
+      const shouldReorder = Boolean(options.reorder) && !isLoadingRows;
+      if (shouldReorder) reorderTableRows();
+      let totalIncome = 0;
+      let totalAds = 0;
+      let totalCost = 0;
+      let totalProfit = 0;
+      let winners = 0;
+      const rows = getRowsFromDom();
+
+      rowsEl.querySelectorAll("tr").forEach((tr, index) => {
+        const result = calculate(rows[index]);
+        const status = statusFor(result);
+        totalIncome += result.income;
+        totalAds += rows[index].adCost;
+        totalCost += result.totalCost;
+        totalProfit += result.profit;
+        if (result.profit > 0) winners += 1;
+
+        tr.querySelector("[data-result='income']").textContent = money(result.income);
+        tr.querySelector("[data-result='profit']").textContent = money(result.profit);
+        tr.querySelector("[data-result='profit']").className = `result ${result.profit >= 0 ? "good" : "bad"}`;
+        tr.querySelector("[data-result='roi']").textContent = percent(result.roi);
+        tr.querySelector("[data-result='roas']").textContent = result.roas.toFixed(2);
+        tr.querySelector("[data-result='cpa']").textContent = money(result.cpa);
+        tr.querySelector("[data-result='status']").textContent = status.text;
+        tr.querySelector("[data-result='status']").className = `status ${status.className}`;
+        const correctedPlatform = platformFromRow(rows[index]);
+        const platformInput = tr.querySelector('[name="platform"]');
+        if (platformInput.value !== correctedPlatform) platformInput.value = correctedPlatform;
+        const platformReadonly = tr.querySelector(".platform-readonly");
+        if (platformReadonly) platformReadonly.textContent = correctedPlatform;
+        tr.className = platformClass(correctedPlatform);
+      });
+      applySearchFilter();
+
+      const totalRoi = totalCost > 0 ? totalProfit / totalCost * 100 : 0;
+      document.getElementById("sumProfit").textContent = money(totalProfit);
+      document.getElementById("sumProfit").className = totalProfit >= 0 ? "good" : "bad";
+      document.getElementById("sumIncome").textContent = money(totalIncome);
+      document.getElementById("sumAds").textContent = money(totalAds);
+      document.getElementById("sumRoi").textContent = percent(totalRoi);
+      document.getElementById("sumRoi").className = totalRoi >= 0 ? "good" : "bad";
+      document.getElementById("sumWinners").textContent = `${winners} / ${rows.length}`;
+      if (!isRangeView) renderDailyChart([summarizeRowsForChart(selectedDate, rows)]);
+      saveRows();
+      restoreActiveField(activeField);
+    }
+
+    function addRow(row = {}) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td data-label="แพลตฟอร์ม">
+          <select name="platform">
+            <option ${row.platform === "Shopee" ? "selected" : ""}>Shopee</option>
+            <option ${row.platform === "Lazada" ? "selected" : ""}>Lazada</option>
+            <option ${row.platform === "Shopee + Lazada" ? "selected" : ""}>Shopee + Lazada</option>
+            <option ${row.platform === "Live สด" ? "selected" : ""}>Live สด</option>
+            <option ${row.platform === "ไม่มียอด" ? "selected" : ""}>ไม่มียอด</option>
+            <option ${row.platform === "อื่น ๆ" ? "selected" : ""}>อื่น ๆ</option>
+          </select>
+          <span class="platform-readonly">${escapeAttr(row.platform || "Shopee")}</span>
+        </td>
+        <td data-label="ชื่อแคมเปญ"><input name="name" value="${escapeAttr(row.name)}" placeholder="ชื่อแคมเปญ" autocomplete="off"></td>
+        <td data-label="ออเดอร์"><input name="orders" type="number" inputmode="numeric" min="0" step="1" value="${row.orders || 0}"></td>
+        <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="decimal" step="0.01" value="${row.shopeeIncome || 0}"></td>
+        <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="decimal" step="0.01" value="${row.lazadaIncome || 0}"></td>
+        <td data-label="ค่าแอด"><input name="adCost" type="number" inputmode="decimal" min="0" step="0.01" value="${row.adCost || 0}"></td>
+        <td class="result" data-label="รายได้รวม" data-result="income">฿0.00</td>
+        <td class="result" data-label="กำไรสุทธิ" data-result="profit">฿0.00</td>
+        <td class="result" data-label="ROI" data-result="roi">0.00%</td>
+        <td class="result" data-label="ROAS" data-result="roas">0.00</td>
+        <td class="result" data-label="CPA" data-result="cpa">฿0.00</td>
+        <td data-label="สถานะ"><span class="status" data-result="status">-</span></td>
+        <td data-label="จัดการ"><button class="btn danger" type="button" data-delete>ลบ</button></td>
+      `;
+
+      tr.querySelectorAll("input").forEach((input) => input.addEventListener("input", () => updateAll()));
+      tr.querySelectorAll("select").forEach((select) => select.addEventListener("change", () => updateAll({ reorder: true })));
+      tr.querySelector("[data-delete]").addEventListener("click", () => {
+        if (isRangeView) return;
+        tr.remove();
+        updateAll({ reorder: true });
+      });
+      rowsEl.appendChild(tr);
+      updateAll({ reorder: !isLoadingRows });
+      updateEditState();
+    }
+
+    function exportExcel() {
+      if (!window.XLSX) {
+        if (saveStatusEl) saveStatusEl.textContent = "ยังโหลดตัวสร้างไฟล์ Excel ไม่สำเร็จ กรุณาเชื่อมต่ออินเทอร์เน็ตแล้วรีเฟรชหน้า";
+        return;
+      }
+
+      const rows = getRowsFromDom();
+      if (!rows.length) {
+        if (saveStatusEl) saveStatusEl.textContent = "ยังไม่มีข้อมูลในตารางสำหรับดาวน์โหลด Excel";
+        return;
+      }
+
+      const tableRows = rows.map((row) => {
+        const result = calculate(row);
+        const status = statusFor(result);
+        return {
+          "แพลตฟอร์ม": row.platform,
+          "ชื่อแคมเปญ/สินค้า": row.name,
+          "ออเดอร์": row.orders,
+          "ยอด Shopee": row.shopeeIncome,
+          "ยอด Lazada": row.lazadaIncome,
+          "ค่าแอด": row.adCost,
+          "รายได้รวม": money(result.income),
+          "กำไรสุทธิ": money(result.profit),
+          "ROI ↕": percent(result.roi),
+          "ROAS": result.roas.toFixed(2),
+          "CPA": money(result.cpa),
+          "สถานะ ↕": status.text
+        };
+      });
+
+      const dateLabel = isRangeView ? `${dateInput.value || selectedDate} ถึง ${rangeEndInput.value || selectedDate}` : selectedDate;
+      const workbook = XLSX.utils.book_new();
+      const headers = ["แพลตฟอร์ม", "ชื่อแคมเปญ/สินค้า", "ออเดอร์", "ยอด Shopee", "ยอด Lazada", "ค่าแอด", "รายได้รวม", "กำไรสุทธิ", "ROI ↕", "ROAS", "CPA", "สถานะ ↕"];
+      const tableSheet = XLSX.utils.json_to_sheet(tableRows, { header: headers });
+      tableSheet["!cols"] = [
+        { wch: 16 }, { wch: 32 }, { wch: 10 }, { wch: 14 }, { wch: 14 }, { wch: 12 },
+        { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }
+      ];
+      XLSX.utils.book_append_sheet(workbook, tableSheet, "ตารางทั้งหมด");
+      XLSX.writeFile(workbook, `affiliate-campaign-profit-${dateLabel.replaceAll(" ", "-")}.xlsx`);
+      if (saveStatusEl) saveStatusEl.textContent = `ดาวน์โหลด Excel แล้ว (${rows.length} แถว)`;
+    }
+
+    document.getElementById("addRow").addEventListener("click", () => {
+      if (isRangeView) return;
+      addRow({
+        platform: "Shopee",
+        name: "",
+        orders: 0,
+        shopeeIncome: 0,
+        lazadaIncome: 0,
+        adCost: 0,
+      });
+    });
+
+    document.getElementById("resetRows").addEventListener("click", () => {
+      if (isRangeView) return;
+      askConfirm("ยืนยันล้างข้อมูล", "ต้องการล้างข้อมูลที่แสดงอยู่ตอนนี้หรือไม่", () => {
+        rowsEl.innerHTML = "";
+        updateAll();
+      });
+    });
+
+    document.getElementById("exportCsv").addEventListener("click", exportExcel);
+
+    document.getElementById("campaignSearch").addEventListener("input", (event) => {
+      searchQuery = event.target.value;
+      applySearchFilter();
+    });
+
+    document.getElementById("sortStatus").addEventListener("click", () => {
+      statusSortMode = statusSortMode === "goodFirst" ? "badFirst" : "goodFirst";
+      roiSortMode = "none";
+      document.getElementById("sortRoi").textContent = "ROI ↕";
+      document.getElementById("sortStatus").textContent = statusSortMode === "goodFirst"
+        ? "สถานะ คุ้มก่อน"
+        : "สถานะ ขาดทุนก่อน";
+      updateAll({ reorder: true });
+    });
+
+    document.getElementById("sortRoi").addEventListener("click", () => {
+      roiSortMode = roiSortMode === "bestFirst" ? "worstFirst" : "bestFirst";
+      statusSortMode = "none";
+      document.getElementById("sortStatus").textContent = "สถานะ ↕";
+      document.getElementById("sortRoi").textContent = roiSortMode === "bestFirst"
+        ? "ROI สูงสุดก่อน"
+        : "ROI ขาดทุนก่อน";
+      updateAll({ reorder: true });
+    });
+
+    dateInput.addEventListener("change", async (event) => {
+      const nextDate = event.target.value || todayDate();
+      await saveRows();
+      rangeEndInput.value = nextDate;
+      saveCurrentView(nextDate, nextDate);
+      saveStatusEl.textContent = `เลือกวันที่ ${nextDate} แล้ว กดตกลงเพื่อแสดงผล`;
+    });
+
+    document.getElementById("showDateRange").addEventListener("click", async () => {
+      const startDate = dateInput.value || selectedDate;
+      const endDate = rangeEndInput.value || startDate;
+      await saveRows();
+      saveCurrentView(startDate, endDate);
+      if (startDate === endDate) await loadRowsForDate(startDate);
+      else await loadRowsForDateRange(startDate, endDate);
+    });
+
+    document.getElementById("themeToggle").addEventListener("click", () => {
+      applyTheme(document.body.classList.contains("dark") ? "light" : "dark");
+    });
+
+    document.getElementById("loginGoogleBtn").addEventListener("click", async () => {
+      setAuthStatus("กำลังเปิด Google Login...");
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: authRedirectTo(),
+          queryParams: {
+            prompt: "select_account"
+          }
+        }
+      });
+      if (error) setAuthStatus(`เข้าสู่ระบบไม่สำเร็จ: ${error.message}`);
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      const { error } = await supabaseClient.auth.signOut();
+      if (error) setAuthStatus(`ออกจากระบบไม่สำเร็จ: ${error.message}`);
+    });
+
+    document.getElementById("cancelConfirm").addEventListener("click", () => {
+      pendingConfirmAction = null;
+      document.getElementById("confirmDialog").close();
+    });
+
+    document.getElementById("acceptConfirm").addEventListener("click", async () => {
+      const action = pendingConfirmAction;
+      pendingConfirmAction = null;
+      document.getElementById("confirmDialog").close();
+      if (action) await action();
+    });
+
+    document.getElementById("shopeeFile").addEventListener("change", (event) => {
+      pendingShopeeFile = event.target.files[0] || null;
+      const statusEl = document.getElementById("shopeeStatus");
+      statusEl.className = "import-status";
+      statusEl.textContent = pendingShopeeFile ? `เลือกไฟล์แล้ว: ${pendingShopeeFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+    });
+
+    document.getElementById("confirmShopeeUpload").addEventListener("click", () => {
+      const statusEl = document.getElementById("shopeeStatus");
+      statusEl.className = "import-status";
+      if (!pendingShopeeFile) {
+        statusEl.textContent = "กรุณาเลือกไฟล์ Shopee ก่อน";
+        return;
+      }
+      askConfirm("ยืนยันอัปโหลด Shopee", `ต้องการนำเข้าไฟล์ ${pendingShopeeFile.name} หรือไม่`, async () => {
+        await ensureSelectedSingleDateLoaded();
+        await importAffiliateFile("Shopee", pendingShopeeFile, statusEl);
+        pendingShopeeFile = null;
+        document.getElementById("shopeeFile").value = "";
+      });
+    });
+
+    document.getElementById("lazadaFile").addEventListener("change", (event) => {
+      pendingLazadaFile = event.target.files[0] || null;
+      const statusEl = document.getElementById("lazadaStatus");
+      statusEl.className = "import-status";
+      statusEl.textContent = pendingLazadaFile ? `เลือกไฟล์แล้ว: ${pendingLazadaFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+    });
+
+    document.getElementById("confirmLazadaUpload").addEventListener("click", () => {
+      const statusEl = document.getElementById("lazadaStatus");
+      statusEl.className = "import-status";
+      if (!pendingLazadaFile) {
+        statusEl.textContent = "กรุณาเลือกไฟล์ Lazada ก่อน";
+        return;
+      }
+      askConfirm("ยืนยันอัปโหลด Lazada", `ต้องการนำเข้าไฟล์ ${pendingLazadaFile.name} หรือไม่`, async () => {
+        await ensureSelectedSingleDateLoaded();
+        await importAffiliateFile("Lazada", pendingLazadaFile, statusEl);
+        pendingLazadaFile = null;
+        document.getElementById("lazadaFile").value = "";
+      });
+    });
+
+    document.getElementById("facebookAdsFile").addEventListener("change", (event) => {
+      pendingFacebookAdsFile = event.target.files[0] || null;
+      const statusEl = document.getElementById("facebookAdsStatus");
+      statusEl.className = "import-status";
+      statusEl.textContent = pendingFacebookAdsFile ? `เลือกไฟล์แล้ว: ${pendingFacebookAdsFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+    });
+
+    document.getElementById("confirmFacebookAdsUpload").addEventListener("click", () => {
+      const statusEl = document.getElementById("facebookAdsStatus");
+      statusEl.className = "import-status";
+      if (!pendingFacebookAdsFile) {
+        statusEl.textContent = "กรุณาเลือกไฟล์ Facebook Ads ก่อน";
+        return;
+      }
+      askConfirm("ยืนยันอัปโหลด Facebook Ads", `ต้องการนำเข้าไฟล์ ${pendingFacebookAdsFile.name} หรือไม่`, async () => {
+        await ensureSelectedSingleDateLoaded();
+        await importFacebookAdsFile(pendingFacebookAdsFile, statusEl);
+        pendingFacebookAdsFile = null;
+        document.getElementById("facebookAdsFile").value = "";
+      });
+    });
+
+    document.getElementById("confirmLiveAds").addEventListener("click", () => {
+      const input = document.getElementById("liveAdsCost");
+      const statusEl = document.getElementById("liveAdsStatus");
+      const adCost = Number(input.value || 0);
+      statusEl.className = "import-status";
+      if (!Number.isFinite(adCost) || adCost <= 0) {
+        statusEl.textContent = "กรุณากรอกค่าแอด Live สดมากกว่า 0";
+        statusEl.className = "import-status bad";
+        return;
+      }
+      askConfirm("ยืนยันค่าแอด Live สด", `ต้องการเพิ่มค่าแอด Live สด ${money(adCost)} หรือไม่`, async () => {
+        await ensureSelectedSingleDateLoaded();
+        addOrMergeImportedRow({
+          platform: "Live สด",
+          name: "Live สด",
+          orders: 0,
+          shopeeIncome: 0,
+          lazadaIncome: 0,
+          adCost
+        });
+        statusEl.textContent = `เพิ่มค่าแอด Live สดแล้ว: ${money(adCost)}`;
+        input.value = "";
+      });
+    });
+
+    async function initApp() {
+      applyTheme(localStorage.getItem(themeStorageKey) || "light");
+      const savedView = readSavedView();
+      selectedDate = savedView ? savedView.startDate : selectedDate;
+      dateInput.value = selectedDate;
+      rangeEndInput.value = savedView ? (savedView.endDate || savedView.startDate) : selectedDate;
+
+      try {
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        setAuthUi(data.session ? data.session.user : null);
+      } catch (error) {
+        console.error(error);
+        setAuthStatus(`ตรวจสอบสถานะ Login ไม่สำเร็จ: ${error.message || error}`);
+      }
+
+      await loadCurrentView();
+
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        const previousUserId = currentUser ? currentUser.id : null;
+        const nextUser = session ? session.user : null;
+        const nextUserId = nextUser ? nextUser.id : null;
+        setAuthUi(nextUser);
+        if (nextUserId && nextUserId !== previousUserId) {
+          await migrateLocalRowsToSupabase();
+          await loadCurrentView();
+        } else if (!nextUserId && previousUserId && event === "SIGNED_OUT") {
+          await loadCurrentView();
+        }
+      });
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
