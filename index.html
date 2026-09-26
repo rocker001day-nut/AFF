@@ -2595,7 +2595,7 @@
         <div class="import-box revenue lazada">
           <span class="step-label">รายได้ 2</span>
           <h2>Lazada Affiliate</h2>
-          <p>นำเข้ารายได้ Lazada: ใช้วันที่จากคอลัมน์ B, ชื่อ SUP จาก AP และรวมยอดจาก W</p>
+          <p>นำเข้ารายได้ Lazada: ใช้วันที่จากคอลัมน์ B, ชื่อ SUP จาก AR และรวมยอดจาก W</p>
           <input id="lazadaFile" type="file" accept=".xlsx,.xls,.csv">
           <button class="btn upload" id="confirmLazadaUpload" type="button">↑ ยืนยันอัปโหลด Lazada</button>
           <div class="import-status" id="lazadaStatus">ยังไม่ได้อัปโหลดไฟล์</div>
@@ -6351,8 +6351,8 @@
           return;
         }
 
-        const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "B", "AP", "W");
-        if (!groupsByDate.size) throw new Error("ไม่พบยอดขายในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AP");
+        const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "B", "AR", "W");
+        if (!groupsByDate.size) throw new Error("ไม่พบยอดขายในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AR");
         const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate);
         statusEl.textContent = `เพิ่ม Lazada แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
       } catch (error) {
