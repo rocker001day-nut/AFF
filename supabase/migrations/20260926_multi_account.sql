@@ -48,4 +48,63 @@ select jsonb_build_object('totals',(select to_jsonb(totals) from totals),
 $$;
 revoke all on function public.affiliate_dashboard(date,date,text,uuid) from public,anon,authenticated;
 grant execute on function public.affiliate_dashboard(date,date,text,uuid) to service_role;
+create or replace view public.reconciliation_sup
+with (security_invoker = true)
+as
+with revenue as (
+  select
+    coalesce(nullif(lower(trim(sub_id2)), ''), '__no_sup__') as sup_key,
+    max(nullif(trim(sub_id2), '')) as sub_id2,
+    max(coalesce(nullif(sub_id5,''), nullif(person_code,''))) as person_code,
+    sum(case when platform = 'shopee' and status_normalized not in ('cancelled','unpaid') then commission else 0 end) as shopee_commission,
+    sum(case when platform = 'lazada' and status_normalized not in ('cancelled','unpaid') then commission else 0 end) as lazada_commission,
+    sum(case when platform = 'shopee' and status_normalized not in ('cancelled','unpaid') then gmv else 0 end) as shopee_gmv,
+    sum(case when platform = 'lazada' and status_normalized not in ('cancelled','unpaid') then gmv else 0 end) as lazada_gmv,
+    count(distinct (platform,account_id,coalesce(nullif(external_order_id,''), dedup_key))) filter (where status_normalized not in ('cancelled','unpaid')) as orders,
+    count(*) filter (where status_normalized = 'cancelled') as cancelled
+  from public.affiliate_conversions
+  group by 1
+), spend as (
+  select
+    coalesce(nullif(lower(trim(sub_id2)), ''), '__no_sup__') as sup_key,
+    max(nullif(trim(sub_id2), '')) as sub_id2,
+    max(nullif(person_code,'')) as person_code,
+    sum(spend) as ad_spend
+  from public.ad_spend_daily
+  group by 1
+), joined as (
+  select
+    coalesce(r.sup_key, s.sup_key) as sup_key,
+    coalesce(r.sub_id2, s.sub_id2, 'ไม่มี SUP') as sub_id2,
+    coalesce(r.person_code, s.person_code) as person_code,
+    coalesce(r.shopee_commission, 0) as shopee_commission,
+    coalesce(r.lazada_commission, 0) as lazada_commission,
+    coalesce(r.shopee_gmv, 0) as shopee_gmv,
+    coalesce(r.lazada_gmv, 0) as lazada_gmv,
+    coalesce(r.orders, 0) as orders,
+    coalesce(r.cancelled, 0) as cancelled,
+    coalesce(s.ad_spend, 0) as ad_spend
+  from revenue r
+  full outer join spend s using (sup_key)
+)
+select
+  sup_key,
+  sub_id2,
+  person_code,
+  shopee_commission,
+  lazada_commission,
+  shopee_commission + lazada_commission as revenue,
+  shopee_gmv,
+  lazada_gmv,
+  orders,
+  cancelled,
+  ad_spend,
+  (shopee_commission + lazada_commission) - ad_spend as profit,
+  case when ad_spend > 0 then (shopee_commission + lazada_commission) / ad_spend else null end as roas,
+  case when ad_spend > 0 then (((shopee_commission + lazada_commission) - ad_spend) / ad_spend) * 100 else null end as roi_pct
+from joined;
+
+grant select on public.reconciliation_sup to authenticated;
+
+
 commit;
