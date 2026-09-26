@@ -34,7 +34,12 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    const contentSha256 = hashObject({ platform, headers, rows });
+    const accountId = String(body.accountId || '');
+    if (!/^[0-9a-f-]{36}$/i.test(accountId)) return fail(res,400,'account_required','กรุณาเลือกบัญชีต้นทางก่อนนำเข้า');
+    const {data:account,error:accountError}=await supabase.from('affiliate_accounts').select('id,platform').eq('id',accountId).maybeSingle();
+    if(accountError) throw accountError;
+    if(!account || account.platform!==platform) return fail(res,400,'invalid_account','บัญชีไม่ตรงกับแพลตฟอร์ม');
+    const contentSha256 = hashObject({ accountId, platform, headers, rows });
     const { data: existing, error: existingError } = await supabase
       .from('import_batches')
       .select('id,status,row_count,inserted_count,updated_count,created_at')
@@ -52,6 +57,7 @@ module.exports = async function handler(req, res) {
         .from('import_batches')
         .insert({
           platform,
+          account_id: accountId,
           source_file_name: fileName,
           content_sha256: contentSha256,
           status: 'processing',
@@ -67,10 +73,13 @@ module.exports = async function handler(req, res) {
       await supabase.from('import_batches').update({ status: 'processing', error_message: null }).eq('id', batchId);
     }
 
-    const mappedRows = rows.map((row, index) => ({
-      ...mapRow(platform, row, mapping, index + 2),
-      import_batch_id: batchId
-    }));
+    const uniqueRows = new Map();
+    rows.forEach((row,index) => {
+      const mapped=mapRow(platform,row,mapping,index+2);
+      mapped.dedup_key=hashObject({accountId,key:mapped.dedup_key});
+      uniqueRows.set(mapped.dedup_key,{...mapped,account_id:accountId,import_batch_id:batchId});
+    });
+    const mappedRows=Array.from(uniqueRows.values());
 
     const { data: upserted, error: upsertError } = await supabase
       .from('affiliate_conversions')
