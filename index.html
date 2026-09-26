@@ -2775,6 +2775,7 @@
           <div class="auto-sync-import">
             <h3>Shopee Affiliate</h3>
             <p class="auto-sync-note">ต้องมี Header ที่ระบุวันซื้อและค่าคอมมิชชัน ระบบจะหา subid1–5 / Order ID / Status ให้โดยอัตโนมัติเมื่อชื่อ Header ตรงที่รองรับ</p>
+            <label>บัญชีต้นทาง<select id="importAccount_shopee"><option value="">เลือกบัญชีต้นทาง</option></select></label>
             <input id="autoShopeeFile" type="file" accept=".xlsx,.xls">
             <button class="btn upload" id="autoImportShopee" type="button">↑ นำเข้า Shopee แบบ Dedup</button>
             <div class="import-status" id="autoShopeeStatus">ยังไม่ได้เลือกไฟล์</div>
@@ -2782,6 +2783,7 @@
           <div class="auto-sync-import">
             <h3>Lazada Affiliate</h3>
             <p class="auto-sync-note">เก็บ subid2 เป็นคีย์ทั้งสตริง ไม่บังคับความยาวรหัสสินค้า และแยกแถวที่ไม่มี SUP ไว้ตรวจสอบ</p>
+            <label>บัญชีต้นทาง<select id="importAccount_lazada"><option value="">เลือกบัญชีต้นทาง</option></select></label>
             <input id="autoLazadaFile" type="file" accept=".xlsx,.xls">
             <button class="btn upload" id="autoImportLazada" type="button">↑ นำเข้า Lazada แบบ Dedup</button>
             <div class="import-status" id="autoLazadaStatus">ยังไม่ได้เลือกไฟล์</div>
@@ -2793,7 +2795,7 @@
       <section class="panel">
         <div class="panel-heading">
           <div>
-            <h2>SUP Reconciliation</h2>
+            <h2>กระทบยอดรวมตลอดเวลา (ไม่ใช้ตัวกรองด้านบน)</h2>
             <p>หนึ่งแถวต่อ SUP: Shopee + Lazada + ค่าแอด + กำไร โดยรายได้หมายถึงค่าคอมมิชชัน</p>
           </div>
         </div>
@@ -7481,5 +7483,6 @@
     initApp();
   </script>
   <script src="app/auto-sync.js" defer></script>
+  <script src="app/multi-account.js" defer></script>
 </body>
 </html>
