@@ -122,6 +122,8 @@
   async function importFile(platform, inputId, statusId) {
     const input = document.getElementById(inputId);
     const status = document.getElementById(statusId);
+    const accountId=document.getElementById('importAccount_'+platform).value;
+    if(!accountId){status.textContent='กรุณาเลือกบัญชีต้นทางก่อน';return;}
     const file = input.files?.[0];
     if (!file) { status.textContent = 'กรุณาเลือกไฟล์ก่อน'; return; }
     status.textContent = 'กำลังอ่าน header และตรวจข้อมูล...';
@@ -129,7 +131,7 @@
       const workbook = await readWorkbook(file);
       const result = await api('/api/import/affiliate', {
         method:'POST',
-        body: JSON.stringify({ platform, fileName:file.name, headers:workbook.headers, rows:workbook.rows })
+        body: JSON.stringify({ accountId, platform, fileName:file.name, headers:workbook.headers, rows:workbook.rows })
       });
       if (result.duplicate) {
         status.textContent = `ไฟล์นี้เคยนำเข้าแล้ว ระบบไม่บวกยอดซ้ำ ✅`;
@@ -137,6 +139,7 @@
         status.textContent = `สำเร็จ ${result.rowCount.toLocaleString('th-TH')} แถว · ไม่มี SUP ${result.unmatched} · SUP parse ไม่ผ่าน ${result.parseFailed}`;
       }
       input.value = '';
+      document.dispatchEvent(new Event('aff:import:complete'));
       await refresh();
     } catch (error) {
       if (error.code === 'mapping_required' && error.details) {
