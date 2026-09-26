@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Affiliate Profit Calculator</title>
+  <link rel="stylesheet" href="app/auto-sync.css">
   <style>
     :root {
       color-scheme: light;
@@ -2555,6 +2556,7 @@
       </div>
       <nav class="app-nav" aria-label="เลือกหน้า">
         <button class="app-nav-btn active" type="button" data-page-target="dashboard">Dashboard</button>
+        <button class="app-nav-btn" type="button" data-page-target="autosync">Auto Sync <span aria-hidden="true">⚡</span></button>
         <button class="app-nav-btn" type="button" data-page-target="office">AI Office</button>
         <button class="app-nav-btn" type="button" data-page-target="dorm">หอพัก</button>
       </nav>
@@ -2746,6 +2748,65 @@
         สูตรหลัก: รายได้รวม = ยอด Shopee + ยอด Lazada, กำไรสุทธิ = รายได้รวม - ค่าแอด, ROI = กำไรสุทธิ / ค่าแอด
       </p>
     </section>
+    </div>
+
+    <div class="app-page" id="autoSyncPage" hidden>
+      <section class="panel">
+        <div class="auto-sync-intro">
+          <div>
+            <span class="auto-sync-badge">Auto Sync · Phase 01 Foundation</span>
+            <h2>ดึงยอดอัตโนมัติ + กระทบยอดตาม SUP</h2>
+            <p>ฐานใหม่เก็บข้อมูลระดับออเดอร์ แยก Shopee/Lazada กันไฟล์ซ้ำ และรวมผลต่อ SUP (subid2) โดยไม่แตะข้อมูลเดิมใน <code>campaign_data</code></p>
+          </div>
+          <button class="btn upload" id="autoSyncRefresh" type="button">↻ รีเฟรชสถานะ</button>
+        </div>
+        <div class="auto-sync-alert" id="autoSyncSetup">กรุณาเข้าสู่ระบบเพื่อโหลดสถานะ Auto Sync</div>
+        <div class="auto-sync-grid" id="autoSyncConnections"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>นำเข้าแบบใหม่ (กันยอดซ้ำ)</h2>
+            <p>อ่านจากชื่อ Header ไม่ยึดตัวอักษรคอลัมน์ และบันทึกระดับรายการออเดอร์สำหรับกระทบยอดภายหลัง</p>
+          </div>
+        </div>
+        <div class="auto-sync-imports">
+          <div class="auto-sync-import">
+            <h3>Shopee Affiliate</h3>
+            <p class="auto-sync-note">ต้องมี Header ที่ระบุวันซื้อและค่าคอมมิชชัน ระบบจะหา subid1–5 / Order ID / Status ให้โดยอัตโนมัติเมื่อชื่อ Header ตรงที่รองรับ</p>
+            <input id="autoShopeeFile" type="file" accept=".xlsx,.xls">
+            <button class="btn upload" id="autoImportShopee" type="button">↑ นำเข้า Shopee แบบ Dedup</button>
+            <div class="import-status" id="autoShopeeStatus">ยังไม่ได้เลือกไฟล์</div>
+          </div>
+          <div class="auto-sync-import">
+            <h3>Lazada Affiliate</h3>
+            <p class="auto-sync-note">เก็บ subid2 เป็นคีย์ทั้งสตริง ไม่บังคับความยาวรหัสสินค้า และแยกแถวที่ไม่มี SUP ไว้ตรวจสอบ</p>
+            <input id="autoLazadaFile" type="file" accept=".xlsx,.xls">
+            <button class="btn upload" id="autoImportLazada" type="button">↑ นำเข้า Lazada แบบ Dedup</button>
+            <div class="import-status" id="autoLazadaStatus">ยังไม่ได้เลือกไฟล์</div>
+          </div>
+        </div>
+        <p class="note">Importer เดิมยังอยู่ครบและใช้งานได้เหมือนเดิม ส่วน importer ใหม่นี้เขียนเข้าตารางใหม่ผ่าน <code>/api/import/affiliate</code> เท่านั้น</p>
+      </section>
+
+      <section class="panel">
+        <div class="panel-heading">
+          <div>
+            <h2>SUP Reconciliation</h2>
+            <p>หนึ่งแถวต่อ SUP: Shopee + Lazada + ค่าแอด + กำไร โดยรายได้หมายถึงค่าคอมมิชชัน</p>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table class="auto-sync-table">
+            <thead><tr>
+              <th>SUP (subid2)</th><th>คน</th><th>ออเดอร์</th><th>Shopee</th><th>Lazada</th><th>รายได้รวม</th><th>ค่าแอด</th><th>กำไร</th><th>ROAS</th><th>ROI</th>
+            </tr></thead>
+            <tbody id="autoSyncTableBody"></tbody>
+          </table>
+          <div class="auto-sync-empty" id="autoSyncEmpty">ยังไม่มีข้อมูลในฐาน Auto Sync</div>
+        </div>
+      </section>
     </div>
 
     <div class="app-page" id="aiOfficePage" hidden>
@@ -3232,6 +3293,7 @@
     const officeCloudRecordDate = "1900-01-01";
     const dormCloudRecordDate = "1900-01-02";
     const dashboardPageEl = document.getElementById("dashboardPage");
+    const autoSyncPageEl = document.getElementById("autoSyncPage");
     const aiOfficePageEl = document.getElementById("aiOfficePage");
     const dormPageEl = document.getElementById("dormPage");
     const officeDepartmentInput = document.getElementById("officeDepartment");
@@ -3310,6 +3372,7 @@
     const supabaseUrl = "https://txbsrtunejnqaheuohck.supabase.co";
     const supabaseKey = "sb_publishable_sEfsAWiZU83ZWgFviwzskg_Nyj4eUR2";
     const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+    window.__affSupabaseClient = supabaseClient;
     let selectedDate = todayDate();
     let isLoadingRows = false;
     let isSavingRows = false;
@@ -3383,10 +3446,12 @@
     }
 
     function setActivePage(page) {
-      const targetPage = page === "office" ? "office" : page === "dorm" ? "dorm" : "dashboard";
+      const targetPage = page === "office" ? "office" : page === "dorm" ? "dorm" : page === "autosync" ? "autosync" : "dashboard";
       dashboardPageEl.hidden = targetPage !== "dashboard";
+      autoSyncPageEl.hidden = targetPage !== "autosync";
       aiOfficePageEl.hidden = targetPage !== "office";
       dormPageEl.hidden = targetPage !== "dorm";
+      if (targetPage === "autosync") document.dispatchEvent(new CustomEvent("aff:auto-sync:open"));
       document.querySelectorAll("[data-page-target]").forEach((button) => {
         const isActive = button.dataset.pageTarget === targetPage;
         button.classList.toggle("active", isActive);
@@ -7414,5 +7479,6 @@
 
     initApp();
   </script>
+  <script src="app/auto-sync.js" defer></script>
 </body>
 </html>
