@@ -5342,6 +5342,7 @@
     function authRedirectTo() {
       const url = new URL(window.location.href);
       url.hash = "";
+      ["error", "error_code", "error_description", "code"].forEach((key) => url.searchParams.delete(key));
       return url.href;
     }
 
