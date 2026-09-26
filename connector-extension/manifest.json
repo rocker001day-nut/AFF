@@ -1,0 +1,11 @@
+{
+ "manifest_version":3,"name":"AFF Account Connector","version":"0.1.0","minimum_chrome_version":"102",
+ "description":"เก็บเซสชัน Shopee/Lazada แยกบัญชีในหน่วยความจำของเบราว์เซอร์ สำหรับ AFF",
+ "permissions":["storage"],
+ "optional_permissions":["cookies"],
+ "optional_host_permissions":["https://*.shopee.co.th/*","https://*.lazada.co.th/*"],
+ "background":{"service_worker":"worker.js"},
+ "content_scripts":[{"matches":["https://aff-lyart.vercel.app/*"],"js":["bridge.js"],"run_at":"document_idle"}],
+ "action":{"default_title":"AFF Connector","default_popup":"popup.html"},
+ "content_security_policy":{"extension_pages":"script-src 'self'; object-src 'none'"}
+}
