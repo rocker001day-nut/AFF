@@ -2655,7 +2655,7 @@
       <div class="toolbar">
         <div>
           <button class="btn primary" id="addRow" type="button">+ เพิ่มแคมเปญ</button>
-          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดทุกยอดตามวันที่ (Excel)</button>
+          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดตารางทั้งหมด (Excel)</button>
           <button class="btn" id="restoreBackup" type="button">กู้คืนจากสำรอง</button>
         </div>
         <button class="btn danger" id="resetRows" type="button">ล้างข้อมูล</button>
@@ -7057,7 +7057,7 @@ function exportExcel() {
         const result = calculate(row);
         return [Number(row.orders || 0), Number(row.shopeeIncome || 0), Number(row.lazadaIncome || 0), Number(row.adCost || 0), result.income, result.profit, Number(row.adCost)>0?result.roi/100:null, Number(row.adCost)>0?result.roas:null, Number(row.orders)>0?result.cpa:null, result.profit >= 0 ? "คุ้ม" : "ขาดทุน"];
       }
-      const headings = ['ออเดอร์','ค่าคอม Shopee','ค่าคอม Lazada','ค่าแอด','รายได้รวม','กำไรสุทธิ','ROI','ROAS','CPA','สถานะ'];
+      const headings = ['ออเดอร์','ยอด Shopee','ยอด Lazada','ค่าแอด','รายได้รวม','กำไรสุทธิ','ROI','ROAS','CPA','สถานะ'];
       const workbook = XLSX.utils.book_new();
       const summary = XLSX.utils.aoa_to_sheet([
         ['สรุป Dashboard'],['เริ่มวันที่',start],['ถึงวันที่',end],['โหมด','ทุกยอด ทุกแพลตฟอร์ม'],['ขอบเขต','ทุกแถวในช่วงวันที่ ไม่จำกัดด้วยตัวกรอง'],
@@ -7065,7 +7065,7 @@ function exportExcel() {
       ]);
       summary['!cols']=[{wch:24},...headings.map(()=>({wch:20}))];
       const detail = XLSX.utils.aoa_to_sheet([
-        ['เริ่มวันที่','ถึงวันที่','แพลตฟอร์ม','SUP / แคมเปญ',...headings],
+        ['เริ่มวันที่','ถึงวันที่','แพลตฟอร์ม','ชื่อแคมเปญ/สินค้า',...headings],
         ...rows.map(row=>[start,end,row.platform,String(row.name||''),...values(row)]),
         [start,end,'','รวม',...values(totals)]
       ]);
@@ -7078,8 +7078,8 @@ function exportExcel() {
       }
       for(let c=2;c<=6;c++){const cell=summary[XLSX.utils.encode_cell({r:8,c})];if(cell)cell.z='#,##0.00';}
       if(summary.H9)summary.H9.z='0.00%';if(summary.I9)summary.I9.z='0.00';if(summary.J9)summary.J9.z='#,##0.00';
+      XLSX.utils.book_append_sheet(workbook,detail,'ตาราง Dashboard');
       XLSX.utils.book_append_sheet(workbook,summary,'สรุปรวม');
-      XLSX.utils.book_append_sheet(workbook,detail,'แยกตาม SUP');
       XLSX.writeFile(workbook,`AFF-summary-${start}-to-${end}.xlsx`);
       saveStatusEl.textContent = `ดาวน์โหลดสรุป ${start} ถึง ${end} แล้ว (${rows.length} SUP)`;
     }
