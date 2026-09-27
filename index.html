@@ -2655,7 +2655,7 @@
       <div class="toolbar">
         <div>
           <button class="btn primary" id="addRow" type="button">+ เพิ่มแคมเปญ</button>
-          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดสรุปตามวันที่ (Excel)</button>
+          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดทุกยอดตามวันที่ (Excel)</button>
           <button class="btn" id="restoreBackup" type="button">กู้คืนจากสำรอง</button>
         </div>
         <button class="btn danger" id="resetRows" type="button">ล้างข้อมูล</button>
@@ -7037,7 +7037,7 @@
       updateEditState();
     }
 
-    function exportExcel() {
+function exportExcel() {
       const start = dateInput.value || selectedDate;
       const end = rangeEndInput.value || start;
       const loadedDates = currentChartRowsByDate.map(item => item.date).sort();
@@ -7047,21 +7047,20 @@
       }
       if (!window.XLSX) { saveStatusEl.textContent = "ตัวสร้าง Excel ยังไม่พร้อม กรุณารีเฟรชหน้า"; return; }
       const query = searchQuery.trim().toLowerCase();
-      const rows = getRowsFromDom().filter(row => rowMatchesViewMode(row) && (!query || String(row.name || '').toLowerCase().includes(query))).map(rowForViewModeSafe);
-      function rowForViewModeSafe(row) { return rowForViewMode(row); }
-      if (!rows.length) { saveStatusEl.textContent = "ไม่มีข้อมูลตามวันที่และตัวกรองที่เลือกสำหรับดาวน์โหลด"; return; }
+      const rows = getRowsFromDom();
+      if (!rows.length) { saveStatusEl.textContent = "ไม่มีข้อมูลในช่วงวันที่ที่เลือกสำหรับดาวน์โหลด"; return; }
       const totals = rows.reduce((sum,row) => {
         for (const key of ['orders','shopeeIncome','lazadaIncome','adCost']) sum[key] += Number(row[key] || 0);
         return sum;
       }, {orders:0,shopeeIncome:0,lazadaIncome:0,adCost:0});
       function values(row) {
         const result = calculate(row);
-        return [Number(row.orders || 0), Number(row.shopeeIncome || 0), Number(row.lazadaIncome || 0), Number(row.adCost || 0), result.income, result.profit, Number(row.adCost)>0?result.roi/100:null, Number(row.adCost)>0?result.roas:null];
+        return [Number(row.orders || 0), Number(row.shopeeIncome || 0), Number(row.lazadaIncome || 0), Number(row.adCost || 0), result.income, result.profit, Number(row.adCost)>0?result.roi/100:null, Number(row.adCost)>0?result.roas:null, Number(row.orders)>0?result.cpa:null, result.profit >= 0 ? "คุ้ม" : "ขาดทุน"];
       }
-      const headings = ['ออเดอร์','ค่าคอม Shopee','ค่าคอม Lazada','ค่าแอด','รายได้รวม','กำไรสุทธิ','ROI','ROAS'];
+      const headings = ['ออเดอร์','ค่าคอม Shopee','ค่าคอม Lazada','ค่าแอด','รายได้รวม','กำไรสุทธิ','ROI','ROAS','CPA','สถานะ'];
       const workbook = XLSX.utils.book_new();
       const summary = XLSX.utils.aoa_to_sheet([
-        ['สรุป Dashboard'],['เริ่มวันที่',start],['ถึงวันที่',end],['โหมด',viewModeLabel()],['ค้นหา SUP',query || 'ทั้งหมด'],
+        ['สรุป Dashboard'],['เริ่มวันที่',start],['ถึงวันที่',end],['โหมด','ทุกยอด ทุกแพลตฟอร์ม'],['ขอบเขต','ทุกแถวในช่วงวันที่ ไม่จำกัดด้วยตัวกรอง'],
         ['ข้อมูล','ตาม Dashboard ณ เวลาดาวน์โหลด'],[],['รายการ',...headings],['รวม',...values(totals)]
       ]);
       summary['!cols']=[{wch:24},...headings.map(()=>({wch:20}))];
@@ -7075,14 +7074,17 @@
         for(let c=5;c<=9;c++){const cell=detail[XLSX.utils.encode_cell({r,c})];if(cell)cell.z='#,##0.00';}
         if(detail[XLSX.utils.encode_cell({r,c:10})])detail[XLSX.utils.encode_cell({r,c:10})].z='0.00%';
         if(detail[XLSX.utils.encode_cell({r,c:11})])detail[XLSX.utils.encode_cell({r,c:11})].z='0.00';
+        if(detail[XLSX.utils.encode_cell({r,c:12})])detail[XLSX.utils.encode_cell({r,c:12})].z='#,##0.00';
       }
       for(let c=2;c<=6;c++){const cell=summary[XLSX.utils.encode_cell({r:8,c})];if(cell)cell.z='#,##0.00';}
-      if(summary.H9)summary.H9.z='0.00%';if(summary.I9)summary.I9.z='0.00';
+      if(summary.H9)summary.H9.z='0.00%';if(summary.I9)summary.I9.z='0.00';if(summary.J9)summary.J9.z='#,##0.00';
       XLSX.utils.book_append_sheet(workbook,summary,'สรุปรวม');
       XLSX.utils.book_append_sheet(workbook,detail,'แยกตาม SUP');
       XLSX.writeFile(workbook,`AFF-summary-${start}-to-${end}.xlsx`);
       saveStatusEl.textContent = `ดาวน์โหลดสรุป ${start} ถึง ${end} แล้ว (${rows.length} SUP)`;
     }
+
+
 
 
     document.getElementById("addRow").addEventListener("click", () => {
