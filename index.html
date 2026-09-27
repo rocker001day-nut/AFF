@@ -2655,7 +2655,7 @@
       <div class="toolbar">
         <div>
           <button class="btn primary" id="addRow" type="button">+ เพิ่มแคมเปญ</button>
-          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดตารางทั้งหมด (Excel)</button>
+          <button class="btn" id="exportCsv" type="button">↓ ดาวน์โหลดสรุป + ตารางทั้งหมด (Excel)</button>
           <button class="btn" id="restoreBackup" type="button">กู้คืนจากสำรอง</button>
         </div>
         <button class="btn danger" id="resetRows" type="button">ล้างข้อมูล</button>
@@ -7064,18 +7064,28 @@ function exportExcel() {
         ['ข้อมูล','ตาม Dashboard ณ เวลาดาวน์โหลด'],[],['รายการ',...headings],['รวม',...values(totals)]
       ]);
       summary['!cols']=[{wch:24},...headings.map(()=>({wch:20}))];
+      const overall = calculate(totals);
+      const winners = rows.filter(row => calculate(row).profit > 0).length;
       const detail = XLSX.utils.aoa_to_sheet([
+        ['สรุป Dashboard และตารางทั้งหมด'],
+        ['เริ่มวันที่',start,'ถึงวันที่',end],
+        [],
+        ['กำไรรวม','รายได้รวม','ค่าแอดรวม','ROI รวม','แคมเปญคุ้มทุน'],
+        [overall.profit,overall.income,totals.adCost,totals.adCost > 0 ? overall.roi / 100 : 0,winners + ' / ' + rows.length],
+        [],
         ['เริ่มวันที่','ถึงวันที่','แพลตฟอร์ม','ชื่อแคมเปญ/สินค้า',...headings],
         ...rows.map(row=>[start,end,row.platform,String(row.name||''),...values(row)]),
         [start,end,'','รวม',...values(totals)]
       ]);
       detail['!cols']=[{wch:14},{wch:14},{wch:20},{wch:38},...headings.map(()=>({wch:18}))];
-      for(let r=1;r<=rows.length+1;r++) {
+      for(let r=7;r<=rows.length+7;r++) {
         for(let c=5;c<=9;c++){const cell=detail[XLSX.utils.encode_cell({r,c})];if(cell)cell.z='#,##0.00';}
         if(detail[XLSX.utils.encode_cell({r,c:10})])detail[XLSX.utils.encode_cell({r,c:10})].z='0.00%';
         if(detail[XLSX.utils.encode_cell({r,c:11})])detail[XLSX.utils.encode_cell({r,c:11})].z='0.00';
         if(detail[XLSX.utils.encode_cell({r,c:12})])detail[XLSX.utils.encode_cell({r,c:12})].z='#,##0.00';
       }
+      for (const address of ['A5','B5','C5']) if(detail[address]) detail[address].z='#,##0.00';
+      if(detail.D5) detail.D5.z='0.00%';
       for(let c=2;c<=6;c++){const cell=summary[XLSX.utils.encode_cell({r:8,c})];if(cell)cell.z='#,##0.00';}
       if(summary.H9)summary.H9.z='0.00%';if(summary.I9)summary.I9.z='0.00';if(summary.J9)summary.J9.z='#,##0.00';
       XLSX.utils.book_append_sheet(workbook,detail,'ตาราง Dashboard');
