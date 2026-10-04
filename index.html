@@ -2832,6 +2832,41 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
 #dashboardPage .aff-product-cell span { display:block;white-space:normal;overflow-wrap:anywhere;line-height:1.6; }
 #dashboardPage input[data-sup-id] { font-family:inherit;font-weight:600; }
 
+.aff-sup-ranking { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px; }
+.aff-sup-group { min-width:0; }
+.aff-sup-group h4 { font-size:13px;line-height:1.6;margin:0 0 10px; }
+.aff-sup-group ol { list-style:none;margin:0;padding:0;display:grid;gap:12px; }
+.aff-sup-group li { min-width:0;padding:9px 10px;border-radius:14px;background:rgba(148,163,184,.06); }
+.aff-sup-rank-label { display:flex;align-items:flex-start;gap:7px;font-size:12px;line-height:1.5; }
+.aff-sup-rank-label b { flex:none;width:18px;height:18px;border-radius:6px;display:grid;place-items:center;font-size:11px;background:rgba(148,163,184,.12);color:var(--muted); }
+.aff-sup-rank-label span { min-width:0;overflow-wrap:anywhere; }
+.aff-sup-rank-value { display:block;margin-top:5px;font-size:13px;line-height:1.5;overflow-wrap:anywhere;font-variant-numeric:tabular-nums; }
+.aff-sup-winners h4,.aff-sup-winners .aff-sup-rank-value { color:#15803d; }
+.aff-sup-losers h4,.aff-sup-losers .aff-sup-rank-value { color:#be123c; }
+.aff-sup-rank-track { height:5px;margin-top:7px;border-radius:99px;background:rgba(148,163,184,.12);overflow:hidden; }
+.aff-sup-rank-track i { display:block;height:100%;border-radius:inherit; }
+.aff-sup-winners .aff-sup-rank-track i { background:#4ade80; }
+.aff-sup-losers .aff-sup-rank-track i { background:#fb7185; }
+.aff-sup-empty { font-size:12px;line-height:1.7;margin:0;color:var(--muted); }
+body.dark .aff-sup-winners h4,body.dark .aff-sup-winners .aff-sup-rank-value { color:#86efac; }
+body.dark .aff-sup-losers h4,body.dark .aff-sup-losers .aff-sup-rank-value { color:#fda4af; }
+@media(max-width:420px) { .aff-sup-ranking { grid-template-columns:minmax(0,1fr);gap:20px; } }
+
+/* Keep account details in normal flow above the workspace. */
+.aff-account-bar { min-width:0;display:flex;justify-content:flex-end; }
+.aff-account-bar .auth-card { order:0;position:static;width:min(620px,100%);max-width:100%;min-width:0;margin:0;padding:14px 18px;border:1px solid var(--line);border-radius:20px;background:var(--panel);box-shadow:0 5px 18px rgba(134,106,158,.035);display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 20px; }
+.aff-account-bar .auth-copy { min-width:0; }
+.aff-account-bar .auth-label { display:block;font-size:12px; }
+.aff-account-bar .auth-status { display:block;max-width:100%;font-size:13px;line-height:1.6;white-space:normal;overflow-wrap:anywhere;word-break:normal; }
+.aff-account-bar .auth-actions { min-width:0;display:flex;flex-direction:row;flex-wrap:wrap;gap:8px; }
+.aff-account-bar .auth-actions .btn { width:auto;min-height:36px;padding:8px 14px;font-size:12px; }
+.aff-account-bar [hidden] { display:none !important; }
+body.dark .aff-account-bar .auth-card { background:var(--panel); }
+@media(max-width:600px) {
+  .aff-account-bar .auth-card { width:100%;grid-template-columns:minmax(0,1fr);padding:13px 15px;gap:10px; }
+  .aff-account-bar .auth-actions .btn { min-height:40px; }
+}
+
 </style>
   <script data-aff-bundle>
 (function (root) {
@@ -2917,23 +2952,73 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
     container.append(graphic, legend);
   }
 
-  function summarizeSup(rows, matches, view) {
+  function rankSupProfit(rows, matches, view, calculate, options = {}) {
     const groups = new Map();
     rows.forEach(row => {
-      if (!matches(row)) return;
-      const visible = view(row);
-      const amount = Math.max(0, number(visible.shopeeIncome)) + Math.max(0, number(visible.lazadaIncome));
-      if (!amount) return;
-      const name = String(row.name || "").trim() || "SUP (unspecified)";
-      groups.set(name, (groups.get(name) || 0) + amount);
+      if (!matches(row) || (options.isLiveRow && options.isLiveRow(row))) return;
+      const supId = splitSupName(row.name).supId;
+      if (!supId) return;
+      const profit = number(calculate(view(row)).profit);
+      groups.set(supId, (groups.get(supId) || 0) + profit);
     });
-    const sorted = [...groups].sort((a,b) => b[1]-a[1]);
-    const shown = sorted.slice(0,6);
-    if(sorted.length > 6) shown.push(["Other SUP", sorted.slice(6).reduce((sum,item)=>sum+item[1],0)]);
-    return { labels: shown.map(item=>item[0]), values: shown.map(item=>item[1]) };
+    const entries = [...groups].map(([supId, profit]) => ({ supId, profit }));
+    const tie = (a, b) => a.supId < b.supId ? -1 : a.supId > b.supId ? 1 : 0;
+    return {
+      winners: entries.filter(item => item.profit > 0).sort((a, b) => b.profit - a.profit || tie(a, b)).slice(0, 5),
+      losers: entries.filter(item => item.profit < 0).sort((a, b) => a.profit - b.profit || tie(a, b)).slice(0, 5)
+    };
   }
 
-  function render(rows, matches, view, calculate, scope) {
+  function drawSupRanking(container, ranking, money) {
+    container.replaceChildren();
+    [
+      { key: "winners", title: "\u0e01\u0e33\u0e44\u0e23\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14", empty: "\u0e44\u0e21\u0e48\u0e21\u0e35 SUP \u0e17\u0e35\u0e48\u0e01\u0e33\u0e44\u0e23\u0e43\u0e19\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e40\u0e25\u0e37\u0e2d\u0e01" },
+      { key: "losers", title: "\u0e02\u0e32\u0e14\u0e17\u0e38\u0e19\u0e2a\u0e39\u0e07\u0e2a\u0e38\u0e14", empty: "\u0e44\u0e21\u0e48\u0e21\u0e35 SUP \u0e17\u0e35\u0e48\u0e02\u0e32\u0e14\u0e17\u0e38\u0e19\u0e43\u0e19\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e40\u0e25\u0e37\u0e2d\u0e01" }
+    ].forEach(group => {
+      const section = document.createElement("section");
+      section.className = "aff-sup-group aff-sup-" + group.key;
+      const heading = document.createElement("h4");
+      heading.textContent = group.title;
+      section.appendChild(heading);
+      const items = ranking[group.key];
+      if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "aff-sup-empty";
+        empty.textContent = group.empty;
+        section.appendChild(empty);
+      } else {
+        const list = document.createElement("ol");
+        const max = Math.abs(items[0].profit);
+        items.forEach((item, index) => {
+          const entry = document.createElement("li");
+          entry.setAttribute("data-sup-rank-id", item.supId);
+          entry.setAttribute("data-profit", item.profit);
+          const label = document.createElement("span");
+          label.className = "aff-sup-rank-label";
+          const place = document.createElement("b");
+          place.textContent = index + 1;
+          const name = document.createElement("span");
+          name.textContent = item.supId;
+          label.append(place, name);
+          const value = document.createElement("strong");
+          value.className = "aff-sup-rank-value";
+          value.textContent = (item.profit > 0 ? "+" : "") + money(item.profit);
+          const track = document.createElement("div");
+          track.className = "aff-sup-rank-track";
+          track.setAttribute("aria-hidden", "true");
+          const bar = document.createElement("i");
+          bar.style.width = Math.abs(item.profit) / max * 100 + "%";
+          track.appendChild(bar);
+          entry.append(label, value, track);
+          list.appendChild(entry);
+        });
+        section.appendChild(list);
+      }
+      container.appendChild(section);
+    });
+  }
+
+  function render(rows, matches, view, calculate, scope, options = {}) {
     const data = summarize(rows, matches, view, calculate);
     const revenue = document.getElementById("affRevenueDonut");
     const outcomes = document.getElementById("affOutcomeDonut");
@@ -2941,17 +3026,16 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
     const money = value => new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 }).format(value);
     draw(revenue, ["Shopee", "Lazada"], data.revenue, colors.slice(0, 2), money, money);
     draw(outcomes, ["กำไร", "ขาดทุน", "เท่าทุน"], data.outcomes, colors.slice(2), value => value + " รายการ", value => value + " รายการ");
-    const supContainer = document.getElementById("affSupDonut");
+    const supContainer = document.getElementById("affSupRanking");
     if (supContainer) {
-      const sup = summarizeSup(rows, matches, view);
-      draw(supContainer, sup.labels, sup.values, ["#6366f1","#f97316","#0d9488","#ec4899","#eab308","#3b82f6","#94a3b8"], money, money);
+      drawSupRanking(supContainer, rankSupProfit(rows, matches, view, calculate, options), money);
     }
     document.getElementById("affChartScope").textContent = scope + " \u00b7 " + "สรุปเฉพาะรายการที่เลือก" + " \u00b7 " + "การค้นหามีผลเฉพาะตาราง";
     document.getElementById("affRevenueNote").textContent = data.excludedRevenue < 0
       ? "แสดงเฉพาะรายได้บวก ไม่รวมยอดติดลบ " + money(data.excludedRevenue) + " (ยอดสุทธิยังรวมในบัตรรายได้)"
       : "สัดส่วนรายได้บวกตามแพลตฟอร์ม";
   }
-  root.AffDashboardVisuals = { summarize, render, selectRows, summarizeSup, splitSupName, updateSupName };
+  root.AffDashboardVisuals = { summarize, render, selectRows, rankSupProfit, splitSupName, updateSupName };
   if (typeof module !== "undefined" && module.exports) module.exports = root.AffDashboardVisuals;
 })(typeof window !== "undefined" ? window : globalThis);
 
@@ -2979,6 +3063,12 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
         <button class="app-nav-btn" type="button" data-page-target="office">AI Office</button>
         <button class="app-nav-btn" type="button" data-page-target="dorm">หอพัก</button>
       </nav>
+
+    </div>
+  </header>
+
+  <main>
+    <div class="aff-account-bar">
       <div class="auth-card signed-out" id="authCard">
         <div class="auth-copy">
           <span class="auth-label">สถานะบัญชี</span>
@@ -2990,9 +3080,6 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
         </div>
       </div>
     </div>
-  </header>
-
-  <main>
     <div class="app-page active" id="dashboardPage">
     <section class="panel aff-import-panel"><details class="aff-import-details"><summary><strong>นำเข้าข้อมูล</strong><span>Shopee / Lazada / Facebook / Live</span><b aria-hidden="true">+</b></summary><div class="aff-import-body">
 
@@ -3113,7 +3200,7 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
           <p>จำนวนรายการแคมเปญที่รวมตาม SUP ในช่วงวันที่และโหมดที่เลือก</p>
           <div class="aff-donut-layout" id="affOutcomeDonut"></div>
         </section>
-<section class="aff-insight" aria-labelledby="affSupTitle"><h3 id="affSupTitle">สัดส่วนรายได้บวก / SUP</h3><p>Top 6 SUP + รายการอื่น (เฉพาะที่เลือก)</p><div class="aff-donut-layout" id="affSupDonut"></div></section>
+<section class="aff-insight" aria-labelledby="affSupTitle"><h3 id="affSupTitle">SUP กำไรสูงสุด / ขาดทุนสูงสุด</h3><p>Top 5 แต่ละฝั่ง · รายได้หักค่าโฆษณา (บาท)<br>รวมยอด SUP เดียวกัน เฉพาะรายการที่เลือก</p><div class="aff-sup-ranking" id="affSupRanking"></div></section>
       </div>
       <div class="daily-chart" aria-live="polite">
         <div class="daily-chart-head">
@@ -7390,7 +7477,7 @@ body.dark #dashboardPage .panel-heading h2::before { background:#fb923c;box-shad
       document.getElementById("sumWinners").textContent = `${winners} / ${countedRows}`;
       const visualModeLabels = { all: "ทุกยอด", combined: "รวม Shopee+Lazada", shopee: "Shopee", lazada: "Lazada" };
       AffDashboardVisuals.render(selectedRows, rowMatchesViewMode, rowForViewMode, calculate,
-        `${dateInput.value}${isRangeView ? " ถึง " + rangeEndInput.value : ""} · ${visualModeLabels[currentViewMode]}`);
+        `${dateInput.value}${isRangeView ? " ถึง " + rangeEndInput.value : ""} · ${visualModeLabels[currentViewMode]}`, { isLiveRow });
       document.getElementById("affSelectionCount").textContent = countedRows + " / " + rows.filter(row => rowMatchesViewMode(row)).length + " SUP " + "ที่เลือก";
       [...rowsEl.querySelectorAll("tr")].forEach((tr, index) => tr.classList.toggle("aff-row-selected", selectedRowFlags[index]));
       if (!isRangeView) {
