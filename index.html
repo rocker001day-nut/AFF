@@ -2537,6 +2537,8 @@
       }
     }
   </style>
+  <link rel="stylesheet" href="app/dashboard-visuals.css">
+  <script src="app/dashboard-visuals.js"></script>
 </head>
 <body>
   <header>
@@ -2552,7 +2554,7 @@
         <div class="logo-shell">
           <img class="brand-logo" src="affiliate-profit-logo-final.png" alt="Affiliate Profit Calculator logo">
         </div>
-        <h1>Affiliate Profit Calculator</h1>
+        <div class="aff-sidebar-brand"><h1>AFF</h1><span>Affiliate workspace</span></div>
       </div>
       <nav class="app-nav" aria-label="เลือกหน้า">
         <button class="app-nav-btn active" type="button" data-page-target="dashboard">Dashboard</button>
@@ -2575,13 +2577,8 @@
 
   <main>
     <div class="app-page active" id="dashboardPage">
-    <section class="panel">
-      <div class="panel-heading">
-        <div>
-          <h2>นำเข้าข้อมูล</h2>
-          <p>อัปโหลดรายงาน affiliate และค่าแอด ระบบจะรวมตาม SUP ให้อัตโนมัติ</p>
-        </div>
-      </div>
+    <section class="panel aff-import-panel"><details class="aff-import-details"><summary><strong>นำเข้าข้อมูล</strong><span>Shopee / Lazada / Facebook / Live</span><b aria-hidden="true">+</b></summary><div class="aff-import-body">
+
       <div class="import-grid">
         <div class="import-box revenue shopee">
           <span class="step-label">รายได้ 1</span>
@@ -2630,13 +2627,15 @@
         </div>
       </div>
       <p class="note">ไฟล์ Excel ใช้ตัวอ่านไฟล์ในหน้าเว็บโดยตรง หากเปิดแบบออฟไลน์แล้วอ่าน .xlsx ไม่ได้ ให้เชื่อมต่ออินเทอร์เน็ตหนึ่งครั้ง หรือบันทึกไฟล์เป็น CSV แล้วอัปโหลดแทน</p>
+
+      </div></details>
     </section>
 
     <section class="panel">
       <div class="panel-heading">
         <div>
-          <h2>สรุปผลรายวัน</h2>
-          <p>เลือกวันที่ ดูย้อนหลัง เรียงกำไร/ขาดทุน และ export CSV</p>
+          <h2>ภาพรวมกำไร</h2>
+          <p>เลือกวันที่และรายการที่อยากดู แล้วมาดูยอดไปด้วยกัน</p>
         </div>
       </div>
       <div class="date-bar">
@@ -2676,6 +2675,7 @@
         </div>
       </div>
 
+<div class="aff-selection-bar"><button class="btn" id="affSelectVisible" type="button">เลือกรายการที่แสดง</button><button class="btn" id="affClearSelection" type="button">ล้างการเลือก</button><span id="affSelectionCount"></span></div>
       <div class="summary" aria-live="polite">
         <div class="metric"><span>กำไรรวม</span><strong id="sumProfit">฿0.00</strong></div>
         <div class="metric"><span>รายได้รวม</span><strong id="sumIncome">฿0.00</strong></div>
@@ -2684,11 +2684,25 @@
         <div class="metric"><span>แคมเปญคุ้มทุน</span><strong id="sumWinners">0 / 0</strong></div>
       </div>
 
+      <p class="aff-chart-scope" id="affChartScope"></p>
+      <div class="aff-insights">
+        <section class="aff-insight" aria-labelledby="affRevenueTitle">
+          <h3 id="affRevenueTitle">สัดส่วนรายได้แต่ละแพลตฟอร์ม</h3>
+          <p id="affRevenueNote">สัดส่วนรายได้บวกตามแพลตฟอร์ม</p>
+          <div class="aff-donut-layout" id="affRevenueDonut"></div>
+        </section>
+        <section class="aff-insight" aria-labelledby="affOutcomeTitle">
+          <h3 id="affOutcomeTitle">ภาพรวมกำไร / ขาดทุน</h3>
+          <p>จำนวนรายการแคมเปญที่รวมตาม SUP ในช่วงวันที่และโหมดที่เลือก</p>
+          <div class="aff-donut-layout" id="affOutcomeDonut"></div>
+        </section>
+<section class="aff-insight" aria-labelledby="affSupTitle"><h3 id="affSupTitle">สัดส่วนรายได้บวก / SUP</h3><p>Top 6 SUP + รายการอื่น (เฉพาะที่เลือก)</p><div class="aff-donut-layout" id="affSupDonut"></div></section>
+      </div>
       <div class="daily-chart" aria-live="polite">
         <div class="daily-chart-head">
           <div>
             <h3>กราฟยอดรายวัน</h3>
-            <p>แท่งเดียวแบ่งสีตามรายได้ Shopee, Lazada และ Live สด ตามโหมดที่เลือก</p>
+            <p>สรุปทุกรายการ Shopee / Lazada / Live ตามช่วงวันที่และโหมดที่เลือก (overall)</p>
           </div>
           <div class="chart-legend">
             <span><i class="legend-dot shopee"></i>Shopee</span>
@@ -2710,7 +2724,7 @@
           <thead>
             <tr>
               <th>แพลตฟอร์ม</th>
-              <th>ชื่อแคมเปญ/สินค้า</th>
+              <th>SUP ID</th><th>ชื่อสินค้า / แคมเปญ</th>
               <th><button class="sort-header" type="button" data-sort-key="orders" data-sort-label="ออเดอร์">ออเดอร์ ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="shopeeIncome" data-sort-label="ยอด Shopee">ยอด Shopee ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="lazadaIncome" data-sort-label="ยอด Lazada">ยอด Lazada ↕</button></th>
@@ -2727,7 +2741,7 @@
           <tbody id="campaignRows"></tbody>
           <tfoot>
             <tr class="table-total-row" id="campaignTotalsRow">
-              <td colspan="2" data-total-label>รวมรายการที่แสดง</td>
+              <td colspan="3" data-total-label>รวมรายการที่แสดง</td>
               <td data-total="orders">0</td>
               <td data-total="shopeeIncome">฿0</td>
               <td data-total="lazadaIncome">฿0</td>
@@ -5315,13 +5329,13 @@
         restoreButton.disabled = isReadOnly;
         restoreButton.title = isReadOnly ? "กู้คืนข้อมูลได้เฉพาะมุมมองวันเดียว" : "กู้คืนข้อมูลจากสำรองล่าสุดของวันที่เลือก";
       }
-      rowsEl.querySelectorAll("input, select, [data-delete]").forEach((control) => {
+      rowsEl.querySelectorAll("input:not([data-aff-select]), select, [data-delete]").forEach((control) => {
         control.disabled = isReadOnly;
         control.title = isReadOnly ? "มุมมองหลายวันเป็นโหมดดูอย่างเดียว" : "";
       });
       rowsEl.querySelectorAll("[data-copy-campaign-name]").forEach((button) => {
         button.disabled = false;
-        button.title = "คัดลอกชื่อแคมเปญ";
+        button.title = "Copy SUP ID";
       });
     }
 
@@ -5641,7 +5655,7 @@
     }
 
     async function copyCampaignNameFromRow(tr) {
-      const input = tr.querySelector('[name="name"]');
+      const input = tr.querySelector("[data-sup-id]");
       const campaignName = input ? input.value.trim() : "";
       if (!campaignName) {
         saveStatusEl.textContent = "ยังไม่มีชื่อแคมเปญให้คัดลอก";
@@ -5649,9 +5663,7 @@
       }
       try {
         const success = await copyTextToClipboard(campaignName);
-        saveStatusEl.textContent = success
-          ? `คัดลอกชื่อแคมเปญแล้ว: ${campaignName}`
-          : "คัดลอกไม่สำเร็จ ลองกดเลือกข้อความเองอีกครั้ง";
+        saveStatusEl.textContent = success ? "Copied SUP ID: "+campaignName : "Copy SUP ID failed";
       } catch (error) {
         console.error(error);
         saveStatusEl.textContent = "คัดลอกไม่สำเร็จ เบราว์เซอร์อาจไม่อนุญาต";
@@ -6917,13 +6929,15 @@
       let winners = 0;
       let countedRows = 0;
       const rows = getRowsFromDom();
+      const selectedRowFlags = [...rowsEl.querySelectorAll("tr")].map(tr => Boolean(tr.querySelector("[data-aff-select]")?.checked));
+      const selectedRows = AffDashboardVisuals.selectRows(rows, selectedRowFlags);
 
       rowsEl.querySelectorAll("tr").forEach((tr, index) => {
         const row = rows[index];
         const viewRow = rowForViewMode(row);
         const result = calculate(viewRow);
         const status = statusFor(result);
-        if (rowMatchesViewMode(row)) {
+        if (selectedRowFlags[index] && rowMatchesViewMode(row)) {
           totalIncome += result.income;
           totalAds += Number(viewRow.adCost || 0);
           totalCost += result.totalCost;
@@ -6957,6 +6971,11 @@
       document.getElementById("sumRoi").textContent = percent(totalRoi);
       document.getElementById("sumRoi").className = totalRoi >= 0 ? "good" : "bad";
       document.getElementById("sumWinners").textContent = `${winners} / ${countedRows}`;
+      const visualModeLabels = { all: "ทุกยอด", combined: "รวม Shopee+Lazada", shopee: "Shopee", lazada: "Lazada" };
+      AffDashboardVisuals.render(selectedRows, rowMatchesViewMode, rowForViewMode, calculate,
+        `${dateInput.value}${isRangeView ? " ถึง " + rangeEndInput.value : ""} · ${visualModeLabels[currentViewMode]}`);
+      document.getElementById("affSelectionCount").textContent = countedRows + " / " + rows.filter(row => rowMatchesViewMode(row)).length + " SUP " + "ที่เลือก";
+      [...rowsEl.querySelectorAll("tr")].forEach((tr, index) => tr.classList.toggle("aff-row-selected", selectedRowFlags[index]));
       if (!isRangeView) {
         currentChartRowsByDate = [{ date: selectedDate, rows }];
         renderCurrentChart();
@@ -6984,6 +7003,7 @@
     }
 
     function addRow(row = {}) {
+      const originalSupParts = AffDashboardVisuals.splitSupName(row.name);
       const tr = document.createElement("tr");
       tr.innerHTML = `
         <td data-label="แพลตฟอร์ม">
@@ -6997,12 +7017,16 @@
           </select>
           <span class="platform-readonly">${escapeAttr(row.platform || "Shopee")}</span>
         </td>
-        <td class="campaign-name-cell" data-label="ชื่อแคมเปญ">
+
+        <td class="campaign-name-cell" data-label="SUP ID">
           <div class="campaign-name-copy">
-            <input name="name" value="${escapeAttr(row.name)}" placeholder="ชื่อแคมเปญ" autocomplete="off">
-            <button class="copy-name-btn" type="button" data-copy-campaign-name title="คัดลอกชื่อแคมเปญ" aria-label="คัดลอกชื่อแคมเปญ">⧉</button>
+            <input type="checkbox" data-aff-select checked aria-label="Select SUP">
+            <input name="name" type="hidden" value="${escapeAttr(row.name)}">
+            <input data-sup-id value="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).supId)}" title="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).supId)}" aria-label="SUP ID">
+            <button class="copy-name-btn" type="button" data-copy-campaign-name title="Copy SUP ID" aria-label="Copy SUP ID">⧉</button>
           </div>
         </td>
+        <td class="aff-product-cell" data-label="Product / Campaign"><span title="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName)}">${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName) || "-"}</span></td>
         <td data-label="ออเดอร์"><input name="orders" type="number" inputmode="numeric" min="0" step="1" value="${row.orders || 0}"></td>
         <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.shopeeIncome)}"></td>
         <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.lazadaIncome)}"></td>
@@ -7016,7 +7040,14 @@
         <td data-label="จัดการ"><button class="btn danger" type="button" data-delete>ลบ</button></td>
       `;
 
-      tr.querySelectorAll("input").forEach((input) => input.addEventListener("input", () => updateAll({ persist: true })));
+      tr.querySelectorAll("input:not([data-aff-select]):not([data-sup-id])").forEach((input) => input.addEventListener("input", () => updateAll({ persist: true })));
+      tr.querySelector("[data-sup-id]").addEventListener("input", (event) => {
+        const rawName = tr.querySelector('[name="name"]');
+        rawName.value = AffDashboardVisuals.updateSupName(rawName.value, event.target.value, originalSupParts.productName);
+        event.target.title = event.target.value;
+        updateAll({ persist: true });
+      });
+      tr.querySelector("[data-aff-select]").addEventListener("change", () => updateAll());
       ["shopeeIncome", "lazadaIncome", "adCost"].forEach((fieldName) => {
         tr.querySelector(`[name="${fieldName}"]`).addEventListener("blur", (event) => {
           event.target.value = wholeNumberDisplay(event.target.value);
@@ -7096,6 +7127,15 @@ function exportExcel() {
 
 
 
+
+    document.getElementById("affSelectVisible").addEventListener("click", () => {
+      rowsEl.querySelectorAll("tr").forEach(tr => { if (!tr.hidden) tr.querySelector("[data-aff-select]").checked = true; });
+      updateAll();
+    });
+    document.getElementById("affClearSelection").addEventListener("click", () => {
+      rowsEl.querySelectorAll("[data-aff-select]").forEach(input => { input.checked = false; });
+      updateAll();
+    });
 
     document.getElementById("addRow").addEventListener("click", () => {
       if (isRangeView) return;
