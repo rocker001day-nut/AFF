@@ -1,0 +1,110 @@
+AFF — เปิดใช้งานหน้าจัดการแฟนเพจ
+
+รุ่นนี้ทำอะไรได้
+• เชื่อม Facebook ผ่าน Facebook Login for Business
+• เลือกเพจที่บัญชีมีสิทธิ์เข้าถึง
+• ดูโพสต์ที่เผยแพร่ กรองวันที่ และโหลดเพิ่มเติม
+• ค้นหาในรายการที่โหลดแล้ว และเลือกหลายรายการ
+• เปิดคอมเมนต์ของโพสต์ แล้วเลือกเพื่อลบ
+• ลบครั้งละไม่เกิน 20 รายการ แสดงรายการก่อนยืนยัน
+• บอกผลสำเร็จ/ไม่สำเร็จแยกแต่ละรายการ
+• ระบบข้อมูลย้อนหลังของ AFF, Google login และอันดับ SUP ใช้ระบบเดิม
+
+สิ่งที่ยังไม่ได้เปิดใช้ในรุ่นนี้
+ยังไม่มีหน้าสร้าง/แก้ไขโพสต์ จัดการแชท แก้ข้อมูลเพจ หรือล้างตัวเลขสถิติ Facebook
+ยังไม่ได้ทดสอบกับบัญชี Facebook จริง เพราะต้องตั้งค่า Meta App ของเจ้าของบัญชีก่อน
+ทดสอบ OAuth และคำสั่ง API ด้วยข้อมูลจำลอง รวมถึงหน้าเว็บ การยกเลิก การลบบางรายการไม่สำเร็จ และข้อมูลย้อนหลังเดิมแล้ว
+
+1) อัปโหลดไฟล์
+แตก AFF-facebook-manager.zip แล้วเปิด https://github.com/rocker001day-nut/AFF
+กด Add file → Upload files
+ลาก index.html และโฟลเดอร์ api กับ server จาก ZIP เข้าไปพร้อมกัน
+โฟลเดอร์ต้องอยู่ที่รากของ repository ไม่ใช่ซ้อนอยู่ในโฟลเดอร์ AFF-facebook-manager
+ไฟล์ที่ใช้ทำงานมี 3 ไฟล์:
+  index.html
+  api/facebook.js
+  server/facebook-core.cjs
+อย่าลบไฟล์ api อื่นของเว็บเดิม: อัปเฉพาะไฟล์ใหม่ลงในโฟลเดอร์เดิม
+Commit changes แล้วรอ Vercel deploy
+FACEBOOK_SETUP.txt และ FACEBOOK_ENV.example.txt เป็นคู่มือ ไม่จำเป็นต้องอัปขึ้นเว็บ
+รุ่นนี้ CSS และ JavaScript ของหน้าเว็บรวมใน index.html แล้ว
+
+2) สร้าง Meta App
+เปิด https://developers.facebook.com/apps/
+สร้าง/เลือกแอปสำหรับจัดการเพจ และเปิด Facebook Login for Business
+ผู้ที่ล็อกอินต้องมีสิทธิ์จัดการเนื้อหาและคอมเมนต์ของเพจ
+สร้าง Login Configuration แบบ User access token / การเข้าสู่ระบบด้วยบัญชีผู้ใช้
+คัดลอก Configuration ID ไปตั้งเป็น FB_LOGIN_CONFIG_ID
+ใน configuration ขอสิทธิ์:
+  pages_show_list
+  pages_read_engagement
+  pages_read_user_content
+  pages_manage_posts
+  pages_manage_engagement
+ถ้า Meta แสดงสิทธิ์อื่นเป็น dependency ให้ทำตามหน้าตั้งค่าของ Meta
+เริ่มทดสอบด้วยบัญชีที่มี role ในแอปและมีสิทธิ์ในเพจ
+ถ้าให้บุคคลอื่นนอก role ใช้ ต้องดำเนินการ Advanced Access / App Review ตามที่ Meta กำหนด
+จัดเตรียม Privacy Policy และช่องทางลบข้อมูลสำหรับแอปตามข้อมูลการใช้งานจริง ก่อนเปิดบริการให้บุคคลอื่น
+
+3) ตั้ง URL กลับเข้าเว็บ
+ใน Facebook Login for Business ตั้ง Valid OAuth Redirect URIs เป็น:
+https://aff-lyart.vercel.app/api/facebook?action=callback
+ตั้ง App Domain เป็น aff-lyart.vercel.app และเปิด Web OAuth Login / Client OAuth Login ถ้าหน้าตั้งค่าแสดงตัวเลือกนี้
+ใช้ URL เดียวกันตรงทุกตัวอักษร รวม ?action=callback
+ถ้าเปลี่ยนโดเมน ต้องเปลี่ยน APP_BASE_URL และ URI นี้ให้ตรงกัน
+
+4) ตั้งค่าใน Vercel
+เปิด https://vercel.com/ แล้วเข้าโปรเจกต์ AFF → Settings → Environment Variables
+เพิ่มค่าเหล่านี้ใน Production:
+  FB_APP_ID             = App ID จาก Meta
+  FB_APP_SECRET         = App Secret จาก Meta
+  FB_LOGIN_CONFIG_ID    = Configuration ID จากข้อ 2
+  FB_SESSION_SECRET     = ข้อความสุ่มอย่างน้อย 32 ตัวอักษร
+  APP_BASE_URL          = https://aff-lyart.vercel.app
+  FB_GRAPH_VERSION      = v26.0 (ไม่ใส่ก็ใช้ค่านี้)
+ห้ามใส่ App Secret หรือ Session Secret ลงใน index.html หรืออัปค่าจริงขึ้น GitHub
+ระบบอ่านค่าลับจาก Environment Variables ฝั่ง server เท่านั้น
+
+วิธีสร้าง Session Secret บน Windows PowerShell:
+$fbSecretBytes = New-Object byte[] 32
+$fbRandom = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+$fbRandom.GetBytes($fbSecretBytes)
+[Convert]::ToBase64String($fbSecretBytes)
+$fbRandom.Dispose()
+คัดลอกผลลัพธ์ไปใส่ FB_SESSION_SECRET ใน Vercel โดยตรง
+
+5) Redeploy และทดสอบ
+หลังบันทึก Environment Variables ให้ Redeploy deployment ล่าสุด
+เปิด https://aff-lyart.vercel.app/#facebook
+เมนู จัดการแฟนเพจ → วิธีเปิดใช้งาน จะแจ้งถ้าค่าตั้งต้นยังไม่ครบ
+เมื่อพร้อม ปุ่ม เชื่อม Facebook จะกดได้
+ล็อกอินที่หน้า Facebook แล้วเลือกเพจ/อนุญาตสิทธิ์ตามที่ Meta แสดง
+กลับมาที่เว็บ เลือกเพจ แล้วกดโหลดโพสต์
+ทดสอบการอ่านก่อน และใช้โพสต์/คอมเมนต์ทดสอบที่ตั้งใจจะลบ
+การลบในหน้านี้ส่งคำสั่งลบจริงไป Facebook อาจกู้คืนไม่ได้
+
+ถ้าพบปัญหา
+• หน้าแจ้งว่า api ยังไม่พร้อม: ตรวจ api/facebook.js และ server/facebook-core.cjs ว่าอยู่ถูกโฟลเดอร์
+• FB_SESSION_SECRET ยังไม่พร้อม: ตั้งข้อความสุ่มอย่างน้อย 32 ตัวอักษรแล้ว Redeploy
+• ล็อกอินไม่กลับเว็บ: ตรวจ Valid OAuth Redirect URI และ APP_BASE_URL
+• ไม่พบเพจ: ตรวจบัญชีที่ใช้ login, สิทธิ์เพจ, role ของแอป และเพจที่อนุญาตระหว่าง login
+• Facebook ไม่อนุญาต: ตรวจสิทธิ์ของ configuration และสถานะ App Review แล้วเชื่อมใหม่
+• รายการหมดอายุ: โหลดรายการใหม่แล้วเลือกใหม่ (รายการสำหรับลบมีอายุ 15 นาที)
+• การเชื่อมต่อหมดอายุ: เชื่อม Facebook ใหม่ (session บนเว็บมีอายุไม่เกิน 8 ชั่วโมง)
+• ปุ่มตัดการเชื่อมต่อ: ลบ session ของ Facebook บนเว็บนี้ ไม่ได้ออกจากระบบ Facebook ทั้งเบราว์เซอร์หรือถอนสิทธิ์แอปบน Meta
+
+รายละเอียดสำหรับผู้พัฒนาต่อ
+api/facebook.js: จุดเข้า Vercel Function
+server/facebook-core.cjs: OAuth, cookie เข้ารหัส, scope ของเพจและรายการ, API
+Token ไม่ส่งให้ JavaScript ในหน้าเว็บ และไม่เก็บลง localStorage/ฐานข้อมูล
+คำสั่งลบตรวจ cookie, Origin, CSRF และรายการที่ออกโดย server
+เรียก DELETE ทีละรายการเพื่อรายงานผลเมื่อบางรายการถูก Meta ปฏิเสธ
+รายการโพสต์และคอมเมนต์ที่โหลดเก็บไว้ชั่วคราวในหน้าที่เปิด ไม่เพิ่มลงฐานข้อมูล AFF
+ไม่มีคำสั่งลบสถิติ ยอดผู้ติดตาม หรือเพจทั้งเพจในรุ่นนี้
+
+เอกสารต้นทาง
+https://developers.facebook.com/documentation/pages-api/manage-pages
+https://developers.facebook.com/documentation/pages-api/posts
+https://developers.facebook.com/docs/graph-api/reference/comment/
+https://developers.facebook.com/docs/graph-api/overview/access-levels/
+https://vercel.com/docs/functions/runtimes/node-js

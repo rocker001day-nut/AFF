@@ -3040,6 +3040,56 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
 })(typeof window !== "undefined" ? window : globalThis);
 
 </script>
+<style data-aff-facebook>
+#facebookPage { min-width:0; }
+#facebookPage[hidden],#facebookPage [hidden] { display:none !important; }
+#facebookPage .fb-panel { min-width:0;margin-bottom:22px;padding:26px;border-radius:24px; }
+.fb-heading,.fb-content-heading { display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap; }
+.fb-heading h2 { font-size:25px;margin:10px 0 5px; }
+.fb-heading p,.fb-content-heading p { color:var(--muted);font-size:13px;line-height:1.7;margin:0; }
+.fb-badge { display:inline-block;padding:6px 11px;background:rgba(99,102,241,.09);color:#6366f1;border-radius:99px;font-size:12px; }
+#facebookPage .btn { width:auto;border-radius:13px; }
+#facebookPage .fb-connect { background:#1877f2;color:white;border-color:#1877f2; }
+.fb-status { margin-top:20px;padding:13px 16px;border-radius:15px;background:rgba(99,102,241,.07);font-size:13px;line-height:1.8;overflow-wrap:anywhere; }
+.fb-status[data-tone="error"] { background:rgba(244,63,94,.08);color:#be123c; }
+.fb-account { display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;font-size:13px;flex-wrap:wrap; }
+.fb-setup { margin-top:18px;font-size:13px;line-height:1.9;color:var(--muted); }
+.fb-setup summary { cursor:pointer;color:var(--ink);font-weight:600; }
+.fb-setup a { color:#6366f1; }
+.fb-filters { display:grid;grid-template-columns:minmax(200px,2fr) repeat(2,minmax(130px,1fr)) auto;gap:14px;align-items:end; }
+.fb-filters label,.fb-search-label { display:grid;gap:7px;min-width:0;font-size:12px;color:var(--muted); }
+.fb-filters input,.fb-filters select,.fb-search-label input { width:100%;min-width:0;border-radius:13px; }
+.fb-content-heading { margin:26px 0 16px; }
+.fb-content-heading h3 { margin:0 0 5px;font-size:19px; }
+.fb-search-label { margin-bottom:16px; }
+.fb-actions { display:flex;gap:10px;flex-wrap:wrap;align-items:center;font-size:12px;margin-bottom:18px; }
+.fb-actions .danger { margin-left:auto; }
+.fb-items { display:grid;gap:13px; }
+.fb-item { display:grid;grid-template-columns:20px minmax(0,1fr);gap:13px;padding:18px;border:1px solid var(--line);border-radius:20px;background:var(--panel); }
+.fb-item.fb-selected { border-color:#a78bfa;background:rgba(167,139,250,.035); }
+.fb-item input[type="checkbox"] { width:17px;height:17px;margin:4px 0 0;accent-color:#8b5cf6; }
+.fb-item-copy { min-width:0; }
+.fb-item-meta { font-size:11px;color:var(--muted);overflow-wrap:anywhere;line-height:1.7; }
+.fb-item-message { font-size:14px;line-height:1.8;white-space:pre-wrap;overflow-wrap:anywhere;margin:9px 0 12px; }
+.fb-item-buttons { display:flex;gap:9px;align-items:center;flex-wrap:wrap; }
+.fb-item-buttons a { font-size:12px;color:#6366f1; }
+.fb-item-buttons .btn { font-size:12px; }
+.fb-item-error { color:#be123c;font-size:12px;line-height:1.7;margin-top:8px; }
+.fb-empty { padding:38px 18px;text-align:center;color:var(--muted);font-size:13px;border:1px dashed var(--line);border-radius:20px; }
+.fb-load-more { margin-top:18px; }
+.fb-results { margin-top:18px;padding:14px 16px;border-radius:14px;background:rgba(22,163,74,.07);font-size:13px;line-height:1.8; }
+.fb-delete-dialog { width:min(540px,calc(100% - 32px));max-height:85vh;overflow:auto;padding:25px;border:1px solid var(--line);border-radius:24px;background:var(--panel);color:var(--ink); }
+.fb-delete-dialog::backdrop { background:rgba(30,27,45,.4);backdrop-filter:blur(4px); }
+.fb-delete-dialog h2 { font-size:21px;margin-top:0; }
+.fb-delete-dialog p,.fb-delete-dialog li { font-size:13px;line-height:1.8;overflow-wrap:anywhere; }
+.fb-delete-dialog ul { max-height:240px;overflow:auto;padding-left:22px; }
+.fb-dialog-actions { display:flex;gap:10px;justify-content:flex-end;margin-top:22px; }
+body.dark .fb-status[data-tone="error"],body.dark .fb-item-error { color:#fda4af; }
+body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#c4b5fd; }
+@media(max-width:1100px) { .fb-filters { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) { #facebookPage .fb-panel { padding:19px; } .fb-filters { grid-template-columns:minmax(0,1fr); } .fb-actions .danger { margin-left:0; } .fb-item { padding:14px;gap:10px; } .fb-heading h2 { font-size:22px; } }
+
+</style>
 </head>
 <body>
   <header>
@@ -3062,6 +3112,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
         <button class="app-nav-btn" type="button" data-page-target="autosync">Auto Sync <span aria-hidden="true">⚡</span></button>
         <button class="app-nav-btn" type="button" data-page-target="office">AI Office</button>
         <button class="app-nav-btn" type="button" data-page-target="dorm">หอพัก</button>
+        <button class="app-nav-btn" type="button" data-page-target="facebook">จัดการแฟนเพจ</button>
       </nav>
 
     </div>
@@ -3750,6 +3801,25 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
         </div>
       </section>
     </div>
+    <div class="app-page" id="facebookPage" hidden>
+      <section class="panel fb-panel">
+        <div class="fb-heading"><div><span class="fb-badge">Facebook workspace</span><h2>จัดการแฟนเพจ</h2><p>รวมโพสต์และคอมเมนต์ของเพจไว้ในที่เดียว</p></div><button class="btn fb-connect" type="button" id="fbConnect" disabled>เชื่อม Facebook</button></div>
+        <div class="fb-status" id="fbStatus" role="status" aria-live="polite">เชื่อมบัญชีเพื่อเลือกเพจที่ต้องการจัดการ</div>
+        <div class="fb-account" id="fbAccount" hidden><span id="fbAccountName"></span><button class="btn" id="fbDisconnect" type="button">ตัดการเชื่อมต่อบนเว็บ</button></div>
+        <details class="fb-setup" id="fbSetup"><summary>วิธีเปิดใช้งาน Facebook</summary><ol><li>สร้าง Meta App และตั้งค่า Facebook Login for Business</li><li>เลือกสิทธิ์ดูเพจ อ่านโพสต์และคอมเมนต์ และลบเนื้อหาของเพจ</li><li>ตั้งค่า App ID, App Secret, Login Configuration ID และ Session Secret ใน Vercel</li><li>เพิ่ม URL สำหรับกลับเข้าเว็บตามคู่มือ FACEBOOK_SETUP.txt แล้ว Redeploy</li></ol><p id="fbSetupStatus">ระบบจะตรวจการตั้งค่าเมื่อเปิดหน้านี้</p><a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">เปิด Meta for Developers ↗</a></details>
+      </section>
+      <section class="panel fb-panel" id="fbWorkspace" hidden>
+        <div class="fb-filters"><label>แฟนเพจ<select id="fbPageSelect"><option value="">เลือกแฟนเพจ</option></select></label><label>ตั้งแต่วันที่<input type="date" id="fbStartDate"></label><label>ถึงวันที่<input type="date" id="fbEndDate"></label><button class="btn" id="fbRefresh" type="button">โหลดโพสต์</button></div>
+        <div class="fb-content-heading"><div><h3 id="fbContentTitle">โพสต์ของเพจ</h3><p id="fbScope">เลือกเพจเพื่อดูโพสต์</p></div><button class="btn" id="fbBackPosts" type="button" hidden>← กลับไปดูโพสต์</button></div>
+        <label class="fb-search-label">ค้นหาในรายการที่โหลดแล้ว<input type="search" id="fbSearch" placeholder="ค้นหาข้อความหรือรหัสโพสต์"></label>
+        <div class="fb-actions"><button class="btn" id="fbSelectVisible" type="button">เลือกที่แสดงทั้งหมด</button><button class="btn" id="fbClear" type="button">ล้างการเลือก</button><span id="fbSelectedCount">เลือก 0 รายการ</span><button class="btn danger" id="fbDeleteSelected" type="button" disabled>ลบรายการที่เลือก</button></div>
+        <div class="fb-empty" id="fbEmpty">เลือกแฟนเพจด้านบนเพื่อเริ่มต้น</div><div class="fb-items" id="fbItems"></div>
+        <button class="btn fb-load-more" id="fbLoadMore" type="button" hidden>โหลดเพิ่มเติม</button>
+        <div class="fb-results" id="fbResults" role="status" aria-live="polite" hidden></div>
+      </section>
+      <dialog class="fb-delete-dialog" id="fbDeleteDialog"><form method="dialog"><h2>ลบรายการที่เลือก?</h2><p id="fbDeleteContext"></p><p>การลบจะนำรายการออกจาก Facebook จริง และอาจกู้คืนไม่ได้</p><ul id="fbDeleteList"></ul><div class="fb-dialog-actions"><button class="btn" id="fbCancelDelete" value="cancel">ยกเลิก</button><button class="btn danger" id="fbConfirmDelete" type="button">ยืนยันลบ</button></div></form></dialog>
+    </div>
+
   </main>
 
   <dialog class="confirm-dialog" id="confirmDialog">
@@ -3966,11 +4036,13 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
     }
 
     function setActivePage(page) {
-      const targetPage = page === "office" ? "office" : page === "dorm" ? "dorm" : page === "autosync" ? "autosync" : "dashboard";
+      const targetPage = page === "facebook" ? "facebook" : page === "office" ? "office" : page === "dorm" ? "dorm" : page === "autosync" ? "autosync" : "dashboard";
       dashboardPageEl.hidden = targetPage !== "dashboard";
       autoSyncPageEl.hidden = targetPage !== "autosync";
       aiOfficePageEl.hidden = targetPage !== "office";
       dormPageEl.hidden = targetPage !== "dorm";
+      document.getElementById("facebookPage").hidden = targetPage !== "facebook";
+      if (targetPage === "facebook") document.dispatchEvent(new CustomEvent("aff:facebook:open"));
       if (targetPage === "autosync") document.dispatchEvent(new CustomEvent("aff:auto-sync:open"));
       document.querySelectorAll("[data-page-target]").forEach((button) => {
         const isActive = button.dataset.pageTarget === targetPage;
@@ -8043,5 +8115,209 @@ function exportExcel() {
   <script src="app/auto-sync.js" defer></script>
   <script src="app/multi-account.js" defer></script>
   <script src="app/connector-client.js" defer></script>
+<script data-aff-facebook>
+(function () {
+  'use strict';
+  const $ = id => document.getElementById(id);
+  if (!$('facebookPage')) return;
+  const state = { connected: false, csrf: '', pages: [], items: [], selected: new Set(), after: null, parent: null, busy: false, generation: 0, pending: [] };
+  const errors = {
+    RECONNECT_FACEBOOK: 'การเชื่อมต่อหมดอายุ กรุณาเชื่อม Facebook ใหม่',
+    FACEBOOK_PERMISSION_REQUIRED: 'Facebook ยังไม่อนุญาตการทำรายการนี้ ตรวจสิทธิ์เพจและสิทธิ์ของแอปแล้วเชื่อมใหม่',
+    PAGE_ACCESS_DENIED: 'บัญชีนี้ไม่มีสิทธิ์จัดการเพจที่เลือก',
+    RELOAD_ITEMS: 'รายการหมดอายุ กรุณาโหลดรายการใหม่ก่อนลบ',
+    SETUP_REQUIRED: 'ยังตั้งค่าการเชื่อม Facebook ไม่ครบ เปิดวิธีเปิดใช้งานด้านล่าง',
+    INVALID_DATE: 'ตรวจวันเริ่มต้นและวันสิ้นสุดอีกครั้ง',
+    INVALID_LOGIN_STATE: 'การเข้าสู่ระบบไม่สมบูรณ์ กรุณากดเชื่อม Facebook ใหม่',
+    FACEBOOK_ACTION_FAILED: 'Facebook ไม่อนุญาตหรือไม่สามารถทำรายการนี้ได้ กรุณาตรวจบน Facebook แล้วโหลดใหม่',
+    FACEBOOK_UNAVAILABLE: 'ติดต่อ Facebook ไม่สำเร็จ กรุณาลองอีกครั้ง',
+    INVALID_REQUEST: 'กรุณารีเฟรชหน้าเว็บแล้วลองอีกครั้ง',
+    API_NOT_AVAILABLE: 'ระบบเชื่อม Facebook ยังไม่พร้อม กรุณาอัปโหลดโฟลเดอร์ api และ server แล้วตั้งค่า Vercel ตามคู่มือ',
+    NETWORK_ERROR: 'เชื่อมต่อไม่สำเร็จ กรุณาลองใหม่'
+  };
+  function status(message, error = false) {
+    $('fbStatus').textContent = message;
+    $('fbStatus').dataset.tone = error ? 'error' : 'normal';
+  }
+  async function api(action, query = {}, payload) {
+    const params = new URLSearchParams({ action, ...query });
+    let response, data;
+    try {
+      response = await fetch('/api/facebook?' + params, { credentials: 'same-origin', cache: 'no-store',
+        ...(payload ? { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Aff-Csrf': state.csrf }, body: JSON.stringify(payload) } : {}) });
+      data = await response.json();
+    } catch { throw Object.assign(new Error(errors.API_NOT_AVAILABLE), { code: 'API_NOT_AVAILABLE' }); }
+    if (!response.ok || data.error) {
+      const code = data.error?.code || 'NETWORK_ERROR';
+      if (response.status === 401) {
+        state.connected = false; state.csrf = ''; state.items = []; state.selected.clear();
+        $('fbConnect').hidden = false; $('fbAccount').hidden = true; $('fbWorkspace').hidden = true;
+      }
+      throw Object.assign(new Error(errors[code] || errors.NETWORK_ERROR), { code });
+    }
+    return data;
+  }
+  function busy(value) {
+    state.busy = value;
+    for (const id of ['fbPageSelect', 'fbStartDate', 'fbEndDate', 'fbRefresh', 'fbSelectVisible', 'fbClear', 'fbLoadMore', 'fbBackPosts', 'fbDisconnect', 'fbConfirmDelete']) $(id).disabled = value;
+    $('fbItems').querySelectorAll('button,input').forEach(el => { el.disabled = value; });
+    $('fbDeleteSelected').disabled = value || !state.selected.size;
+  }
+  function visibleItems() {
+    const search = $('fbSearch').value.toLocaleLowerCase();
+    return state.items.filter(item => (item.message + ' ' + item.id).toLocaleLowerCase().includes(search));
+  }
+  function setCount() {
+    $('fbSelectedCount').textContent = 'เลือก ' + state.selected.size + ' / ' + state.items.length + ' รายการ';
+    $('fbDeleteSelected').disabled = state.busy || !state.selected.size;
+  }
+  function date(value) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? '' : new Intl.DateTimeFormat('th-TH', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Bangkok' }).format(parsed);
+  }
+  function render() {
+    const container = $('fbItems'); container.replaceChildren();
+    const shown = visibleItems();
+    $('fbEmpty').hidden = shown.length > 0;
+    $('fbEmpty').textContent = !$('fbPageSelect').value ? 'เลือกแฟนเพจด้านบนเพื่อเริ่มต้น' : state.items.length ? 'ไม่พบข้อความที่ค้นหาในรายการที่โหลดแล้ว' : 'ไม่พบรายการ ลองเปลี่ยนช่วงวันที่หรือโหลดใหม่';
+    $('fbContentTitle').textContent = state.parent ? 'คอมเมนต์ของโพสต์' : 'โพสต์ของเพจ';
+    const page = state.pages.find(page => page.id === $('fbPageSelect').value);
+    $('fbScope').textContent = (page?.name || 'เลือกเพจเพื่อดูโพสต์') + (state.parent ? ' · โพสต์ ' + state.parent.id : '') + ' · โหลดแล้ว ' + state.items.length + ' รายการ';
+    $('fbBackPosts').hidden = !state.parent;
+    $('fbLoadMore').hidden = !state.after;
+    shown.forEach(item => {
+      const article = document.createElement('article'); article.className = 'fb-item';
+      article.classList.toggle('fb-selected', state.selected.has(item.id));
+      article.dataset.itemId = item.id;
+      const check = document.createElement('input'); check.type = 'checkbox'; check.checked = state.selected.has(item.id); check.disabled = state.busy;
+      check.setAttribute('aria-label', 'เลือก ' + item.id);
+      check.addEventListener('change', () => { if (check.checked) state.selected.add(item.id); else state.selected.delete(item.id); article.classList.toggle('fb-selected', check.checked); setCount(); });
+      const copy = document.createElement('div'); copy.className = 'fb-item-copy';
+      const meta = document.createElement('div'); meta.className = 'fb-item-meta'; meta.textContent = date(item.createdTime) + ' · ID ' + item.id;
+      const message = document.createElement('p'); message.className = 'fb-item-message'; message.textContent = item.message || '(รายการนี้ไม่มีข้อความ)';
+      const buttons = document.createElement('div'); buttons.className = 'fb-item-buttons';
+      if (!state.parent) {
+        const comments = document.createElement('button'); comments.type = 'button'; comments.className = 'btn'; comments.textContent = 'ดูคอมเมนต์'; comments.disabled = state.busy;
+        comments.addEventListener('click', () => { state.parent = item; loadItems(); }); buttons.appendChild(comments);
+        try {
+          const url = new URL(item.url);
+          if (url.protocol === 'https:' && (url.hostname === 'facebook.com' || url.hostname.endsWith('.facebook.com'))) {
+            const link = document.createElement('a'); link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'เปิดบน Facebook ↗'; buttons.appendChild(link);
+          }
+        } catch { /* Posts without a permalink can still be managed. */ }
+      }
+      copy.append(meta, message, buttons);
+      if (item.error) { const error = document.createElement('p'); error.className = 'fb-item-error'; error.textContent = item.error; copy.appendChild(error); }
+      article.append(check, copy); container.appendChild(article);
+    });
+    setCount();
+  }
+  async function loadItems(append = false) {
+    if (state.busy || !state.connected) return;
+    const pageId = $('fbPageSelect').value;
+    const start = $('fbStartDate').value, end = $('fbEndDate').value;
+    if (start && end && start > end) { status(errors.INVALID_DATE, true); return; }
+    const generation = ++state.generation;
+    if (!append) { state.items = []; state.selected.clear(); state.after = null; $('fbSearch').value = ''; $('fbResults').hidden = true; render(); }
+    if (!pageId) return;
+    busy(true); status(state.parent ? 'กำลังโหลดคอมเมนต์…' : 'กำลังโหลดโพสต์…');
+    try {
+      const query = { pageId, ...(append && state.after ? { after: state.after } : {}) };
+      if (state.parent) { query.postId = state.parent.id; query.postTicket = state.parent.ticket; }
+      else { if (start) query.start = start; if (end) query.end = end; }
+      const data = await api(state.parent ? 'comments' : 'posts', query);
+      if (generation !== state.generation) return;
+      const known = new Set(state.items.map(item => item.id));
+      state.items.push(...data.items.filter(item => !known.has(item.id)));
+      state.after = data.after || null;
+      status('โหลดรายการแล้ว เลือกรายการที่ต้องการจัดการได้เลย');
+    } catch (error) { status(error.message, true); }
+    finally { busy(false); render(); }
+  }
+  async function refreshConnection() {
+    if (state.busy) return;
+    let configured = false;
+    busy(true);
+    try {
+      const info = await api('status');
+      configured = info.configured;
+      $('fbSetup').open = !info.configured;
+      $('fbSetupStatus').textContent = info.configured ? 'การตั้งค่าระบบพร้อมแล้ว' : 'ยังต้องตั้งค่า: ' + info.missing.join(', ');
+      state.connected = info.connected; state.csrf = info.csrf || '';
+      $('fbConnect').hidden = info.connected; $('fbConnect').disabled = !info.configured;
+      $('fbAccount').hidden = !info.connected; $('fbWorkspace').hidden = !info.connected;
+      if (!info.connected) { state.items = []; state.selected.clear(); render(); status(info.configured ? 'พร้อมเชื่อม Facebook เพื่อเลือกแฟนเพจ' : errors.SETUP_REQUIRED); return; }
+      $('fbAccountName').textContent = 'เชื่อมต่อแล้ว · ' + (info.userName || 'บัญชี Facebook');
+      const data = await api('pages'); state.pages = data.pages;
+      const select = $('fbPageSelect'), oldId = select.value; select.replaceChildren(new Option('เลือกแฟนเพจ', ''));
+      state.pages.forEach(page => select.appendChild(new Option(page.name, page.id)));
+      select.value = state.pages.some(page => page.id === oldId) ? oldId : '';
+      state.items = []; state.parent = null; state.selected.clear(); state.after = null; render();
+      status(state.pages.length ? 'พบ ' + state.pages.length + ' เพจ เลือกเพจที่ต้องการจัดการ' : 'ไม่พบเพจ ตรวจว่าบัญชีมีสิทธิ์จัดการและอนุญาตให้แอปเข้าถึงเพจแล้ว');
+    } catch (error) { $('fbSetup').open = true; $('fbConnect').disabled = !configured; if (configured) $('fbConnect').hidden = false; status(error.message, true); }
+    finally { busy(false); }
+  }
+  function openDelete() {
+    if (state.busy || !state.selected.size) return;
+    if (state.selected.size > 20) { status('ลบได้ครั้งละไม่เกิน 20 รายการ กรุณาลดจำนวนที่เลือก', true); return; }
+    state.pending = state.items.filter(item => state.selected.has(item.id)).map(item => ({ ...item }));
+    const page = state.pages.find(page => page.id === $('fbPageSelect').value);
+    $('fbDeleteContext').textContent = 'เพจ ' + (page?.name || '') + ' · ' + (state.parent ? 'คอมเมนต์' : 'โพสต์') + ' ' + state.pending.length + ' รายการ';
+    $('fbDeleteList').replaceChildren();
+    state.pending.forEach(item => { const li = document.createElement('li'); li.textContent = item.id + ' · ' + (item.message || '(ไม่มีข้อความ)').slice(0, 110); $('fbDeleteList').appendChild(li); });
+    $('fbDeleteDialog').showModal();
+  }
+  async function deletePending() {
+    if (state.busy || !state.pending.length) return;
+    const pageId = $('fbPageSelect').value, kind = state.parent ? 'comment' : 'post';
+    const pending = state.pending; state.pending = []; $('fbDeleteDialog').close(); busy(true);
+    let deleted = 0, failed = 0, processed = 0;
+    $('fbResults').hidden = false;
+    try {
+      for (const item of pending) {
+        $('fbResults').textContent = 'กำลังดำเนินการ ' + (processed + 1) + ' / ' + pending.length;
+        try {
+          const result = await api('delete', {}, { pageId, kind, id: item.id, ticket: item.ticket, confirm: true });
+          if (result.deleted !== true || result.id !== item.id) throw new Error(errors.FACEBOOK_ACTION_FAILED);
+          state.items = state.items.filter(row => row.id !== item.id); state.selected.delete(item.id); deleted++;
+        } catch (error) {
+          failed++; const current = state.items.find(row => row.id === item.id); if (current) current.error = error.message;
+          if (error.code === 'RECONNECT_FACEBOOK' || error.code === 'INVALID_REQUEST') { processed++; break; }
+        }
+        processed++;
+      }
+    } finally {
+      busy(false); render();
+      const skipped = pending.length - processed;
+      $('fbResults').textContent = 'ลบสำเร็จ ' + deleted + ' · ไม่สำเร็จ ' + failed + (skipped ? ' · ยังไม่ได้ดำเนินการ ' + skipped : '') + ' รายการ';
+      status(failed || skipped ? 'บางรายการยังไม่ได้ลบ ตรวจผลด้านล่างและโหลดใหม่ก่อนลองอีกครั้ง' : 'ลบรายการที่เลือกสำเร็จแล้ว', Boolean(failed || skipped));
+    }
+  }
+  $('fbConnect').addEventListener('click', () => { window.location.assign('/api/facebook?action=login'); });
+  $('fbDisconnect').addEventListener('click', async () => { if (state.busy) return; busy(true); try { await api('disconnect', {}, {}); state.connected = false; } catch (error) { status(error.message, true); } finally { busy(false); } if (!state.connected) refreshConnection(); });
+  $('fbPageSelect').addEventListener('change', () => { state.parent = null; loadItems(); });
+  $('fbRefresh').addEventListener('click', () => { state.parent = null; loadItems(); });
+  $('fbBackPosts').addEventListener('click', () => { state.parent = null; loadItems(); });
+  $('fbLoadMore').addEventListener('click', () => loadItems(true));
+  $('fbSearch').addEventListener('input', render);
+  $('fbSelectVisible').addEventListener('click', () => { if (!state.busy) { visibleItems().forEach(item => state.selected.add(item.id)); render(); } });
+  $('fbClear').addEventListener('click', () => { if (!state.busy) { state.selected.clear(); render(); } });
+  $('fbDeleteSelected').addEventListener('click', openDelete);
+  $('fbConfirmDelete').addEventListener('click', deletePending);
+  $('fbDeleteDialog').addEventListener('close', () => { if (!state.busy) state.pending = []; });
+  document.addEventListener('aff:facebook:open', refreshConnection);
+  document.querySelectorAll('[data-page-target]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.pageTarget !== 'facebook' && window.location.hash === '#facebook') history.replaceState(null, '', window.location.pathname + window.location.search);
+  }));
+  const params = new URLSearchParams(window.location.search);
+  if (window.location.hash === '#facebook' || params.has('fb_connected') || params.has('fb_error')) {
+    setActivePage('facebook');
+    const error = params.get('fb_error');
+    if (error) status(error === 'cancelled' ? 'ยกเลิกการเชื่อม Facebook แล้ว' : errors[error] || errors.NETWORK_ERROR, true);
+    const clean = new URL(window.location.href); clean.searchParams.delete('fb_connected'); clean.searchParams.delete('fb_error'); history.replaceState(null, '', clean.pathname + clean.search + clean.hash);
+  } else if (!$('facebookPage').hidden) refreshConnection();
+})();
+
+</script>
 </body>
 </html>

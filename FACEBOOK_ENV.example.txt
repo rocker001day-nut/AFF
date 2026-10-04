@@ -1,0 +1,12 @@
+เพิ่มค่าเหล่านี้ใน Vercel → Settings → Environment Variables
+นี่เป็นตัวอย่างชื่อค่าเท่านั้น ไม่ใช่ข้อมูลเชื่อมต่อที่ใช้งานได้
+
+FB_APP_ID=<App ID>
+FB_APP_SECRET=<App Secret ตั้งใน Vercel เท่านั้น>
+FB_LOGIN_CONFIG_ID=<Facebook Login for Business Configuration ID แบบ User access token>
+FB_SESSION_SECRET=<ข้อความสุ่มอย่างน้อย 32 ตัวอักษร ตั้งใน Vercel เท่านั้น>
+APP_BASE_URL=https://aff-lyart.vercel.app
+FB_GRAPH_VERSION=v26.0
+
+Valid OAuth Redirect URI:
+https://aff-lyart.vercel.app/api/facebook?action=callback
