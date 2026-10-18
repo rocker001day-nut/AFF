@@ -2556,8 +2556,8 @@ main { grid-template-columns: minmax(0, 1fr); }
 #dashboardPage .campaign-name-copy { grid-template-columns: 18px minmax(170px, 1fr) 44px; align-items: center; }
 #dashboardPage { display: flex; flex-direction: column; gap: 24px; }
 #dashboardPage > .panel { margin-bottom: 0; border-radius: 22px; }
-#dashboardPage > .panel:first-child { order: 2; }
-#dashboardPage > .panel:nth-child(2) { order: 1; }
+#dashboardPage > .panel:first-child { order: 1; }
+#dashboardPage > .panel:nth-child(2) { order: 2; }
 #dashboardPage .panel-heading h2 { font-size: 23px; }
 #dashboardPage .panel-heading p { line-height: 1.65; }
 #dashboardPage .summary { gap: 14px; }
@@ -2698,6 +2698,11 @@ body.dark #dashboardPage table th { background:#1f2937; }
 .aff-import-details summary span { color:var(--muted);font-size:10px; }
 .aff-import-details summary b { margin-left:auto;color:#f97316;font-size:20px;line-height:1; }
 .aff-import-details[open] summary b { transform:rotate(45deg); }
+.aff-import-toggle { display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0; }
+.aff-import-details .aff-import-toggle > span { flex-basis:auto;white-space:nowrap; }
+.aff-import-toggle .aff-import-hide,.aff-import-details[open] .aff-import-show { display:none; }
+.aff-import-details[open] .aff-import-hide { display:inline; }
+@media(max-width:650px) { .aff-import-details summary > span:not(.aff-import-toggle) { flex-basis:100%;order:3; } .aff-import-details summary .aff-import-toggle { flex-basis:auto;width:auto;font-size:12px; } }
 .aff-import-body { padding:0 20px 20px; }
 #dashboardPage .aff-import-body .import-grid { gap:14px; }
 #dashboardPage .aff-import-body .import-box { border-radius:13px;padding:18px; }
@@ -3132,7 +3137,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       </div>
     </div>
     <div class="app-page active" id="dashboardPage">
-    <section class="panel aff-import-panel"><details class="aff-import-details"><summary><strong>นำเข้าข้อมูล</strong><span>Shopee / Lazada / Facebook / Live</span><b aria-hidden="true">+</b></summary><div class="aff-import-body">
+    <section class="panel aff-import-panel"><details class="aff-import-details"><summary><strong>อัปโหลดไฟล์</strong><span>Shopee / Lazada / Facebook / Live</span><span class="aff-import-toggle" aria-hidden="true"><span class="aff-import-show">กางเพื่ออัปโหลด</span><span class="aff-import-hide">พับเก็บ</span><b>+</b></span></summary><div class="aff-import-body">
 
       <div class="import-grid">
         <div class="import-box revenue shopee">
