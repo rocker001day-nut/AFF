@@ -2873,6 +2873,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
 }
 
 </style>
+<link rel="stylesheet" href="app/edit-post.css">
   <script data-aff-bundle>
 (function (root) {
   "use strict";
@@ -3118,6 +3119,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <button class="app-nav-btn" type="button" data-page-target="office">AI Office</button>
         <button class="app-nav-btn" type="button" data-page-target="dorm">หอพัก</button>
         <button class="app-nav-btn" type="button" data-page-target="facebook">จัดการแฟนเพจ</button>
+        <button class="app-nav-btn" type="button" data-page-target="editpost">แก้โพสต์ + Ads</button>
       </nav>
 
     </div>
@@ -3824,6 +3826,22 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       </section>
       <dialog class="fb-delete-dialog" id="fbDeleteDialog"><form method="dialog"><h2>ลบรายการที่เลือก?</h2><p id="fbDeleteContext"></p><p>การลบจะนำรายการออกจาก Facebook จริง และอาจกู้คืนไม่ได้</p><ul id="fbDeleteList"></ul><div class="fb-dialog-actions"><button class="btn" id="fbCancelDelete" value="cancel">ยกเลิก</button><button class="btn danger" id="fbConfirmDelete" type="button">ยืนยันลบ</button></div></form></dialog>
     </div>
+    <div class="app-page" id="editPostPage" hidden>
+      <section class="panel ep-hero">
+        <div><span class="ep-eyebrow">AFF WORKFLOW</span><h2>แก้ลิงก์โพสต์และเตรียม Ads</h2><p>เปิดไฟล์งาน เลือกรายการ แล้วไล่ตรวจทีละขั้น ข้อมูลคิวเก็บในเบราว์เซอร์เครื่องนี้</p></div>
+        <span class="ep-stage">หน้าเตรียมงาน · ยังไม่สั่งแก้ Ads อัตโนมัติ</span>
+      </section>
+      <section class="panel ep-upload">
+        <div class="ep-heading"><div><span class="ep-step">01</span><h3>เปิดไฟล์ Excel งานแก้ลิงก์</h3></div><span id="epFileName">ยังไม่มีไฟล์งาน</span></div>
+        <div class="ep-upload-row"><label class="btn upload ep-file-button">เลือกไฟล์ .xlsx / .xls<input id="epFile" type="file" accept=".xlsx,.xls" hidden></label><button class="btn" type="button" id="epExport" disabled>ดาวน์โหลดสรุปงาน</button></div>
+        <p class="ep-hint">รองรับรูปแบบ AFF Edit Post: โพสต์อยู่คอลัมน์ B, ลิงก์สินค้าในแถวถัดไป และ Sub_id ในคอลัมน์ C · การเปิดไฟล์ใหม่จะแทนคิวในเครื่องนี้</p>
+        <p class="ep-message" id="epMessage" role="status" aria-live="polite">เลือกไฟล์เพื่อเริ่มงาน หรือเปิดคิวที่ทำค้างไว้ในเครื่องนี้</p>
+      </section>
+      <section class="ep-workspace" id="epWorkspace" hidden>
+        <section class="panel ep-list-panel"><div class="ep-heading"><div><span class="ep-step">02</span><h3>เลือกรายการ</h3></div><span id="epCount">0 รายการ</span></div><input id="epSearch" type="search" placeholder="ค้นหาโพสต์ / Sub ID" aria-label="ค้นหารายการ"><div id="epList" class="ep-list"></div></section>
+        <section class="panel ep-detail-panel" id="epDetail"><div class="ep-empty">เลือกรายการทางซ้ายเพื่อดูรายละเอียด</div></section>
+      </section>
+    </div>
 
   </main>
 
@@ -4041,13 +4059,15 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function setActivePage(page) {
-      const targetPage = page === "facebook" ? "facebook" : page === "office" ? "office" : page === "dorm" ? "dorm" : page === "autosync" ? "autosync" : "dashboard";
+      const targetPage = ["facebook", "editpost", "office", "dorm", "autosync"].includes(page) ? page : "dashboard";
       dashboardPageEl.hidden = targetPage !== "dashboard";
       autoSyncPageEl.hidden = targetPage !== "autosync";
       aiOfficePageEl.hidden = targetPage !== "office";
       dormPageEl.hidden = targetPage !== "dorm";
       document.getElementById("facebookPage").hidden = targetPage !== "facebook";
+      document.getElementById("editPostPage").hidden = targetPage !== "editpost";
       if (targetPage === "facebook") document.dispatchEvent(new CustomEvent("aff:facebook:open"));
+      if (targetPage === "editpost") document.dispatchEvent(new CustomEvent("aff:edit-post:open"));
       if (targetPage === "autosync") document.dispatchEvent(new CustomEvent("aff:auto-sync:open"));
       document.querySelectorAll("[data-page-target]").forEach((button) => {
         const isActive = button.dataset.pageTarget === targetPage;
@@ -8120,6 +8140,7 @@ function exportExcel() {
   <script src="app/auto-sync.js" defer></script>
   <script src="app/multi-account.js" defer></script>
   <script src="app/connector-client.js" defer></script>
+  <script src="app/edit-post.js" defer></script>
 <script data-aff-facebook>
 (function () {
   'use strict';
