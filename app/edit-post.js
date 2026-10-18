@@ -212,8 +212,20 @@
     } catch { message('คิวเดิมอ่านไม่ได้ เลือก Excel เพื่อเริ่มใหม่', true); }
     renderList(); renderDetail();
   }
-  $('epFile').addEventListener('change', event => importFile(event.target.files?.[0]));
+  $('epFile').addEventListener('change', event => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    importFile(file);
+  });
   $('epSearch').addEventListener('input', renderList);
   $('epExport').addEventListener('click', exportSummary);
   restore();
+  document.querySelectorAll('[data-page-target]').forEach(button => button.addEventListener('click', () => {
+    if (button.dataset.pageTarget === 'editpost') {
+      history.replaceState(null, '', location.pathname + location.search + '#editpost');
+    } else if (location.hash === '#editpost') {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }));
+  if (location.hash === '#editpost') document.querySelector('[data-page-target="editpost"]')?.click();
 })(typeof window !== 'undefined' ? window : globalThis);
