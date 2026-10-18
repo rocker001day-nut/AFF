@@ -1,0 +1,57 @@
+#editPostPage[hidden], #editPostPage [hidden] { display: none !important; }
+#editPostPage { min-width: 0; }
+#editPostPage .panel { border-radius: 22px; }
+#editPostPage .ep-hero { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 27px 30px; margin-bottom: 18px; background: linear-gradient(125deg, #fff7ed, #fff 66%); }
+body.dark #editPostPage .ep-hero { background: linear-gradient(125deg, #392b25, var(--panel) 70%); }
+#editPostPage .ep-eyebrow { color: #ea580c; font-size: 11px; font-weight: 800; letter-spacing: .12em; }
+#editPostPage h2 { margin: 7px 0 8px; font-size: clamp(22px, 2.4vw, 30px); line-height: 1.3; }
+#editPostPage h3 { margin: 0; font-size: 17px; }
+#editPostPage p { line-height: 1.65; }
+#editPostPage .ep-hero p, #editPostPage .ep-hint { margin: 0; color: var(--muted); font-size: 13px; }
+#editPostPage .ep-stage { flex: 0 0 auto; border-radius: 99px; padding: 10px 14px; background: #ffedd5; color: #9a3412; font-size: 12px; font-weight: 700; }
+body.dark #editPostPage .ep-stage { background: #5b3525; color: #fed7aa; }
+#editPostPage .ep-upload { padding: 23px 26px; margin-bottom: 18px; }
+#editPostPage .ep-heading, #editPostPage .ep-heading > div { display: flex; align-items: center; gap: 11px; }
+#editPostPage .ep-heading { justify-content: space-between; flex-wrap: wrap; }
+#editPostPage .ep-heading > span { color: var(--muted); font-size: 12px; }
+#editPostPage .ep-step { display: inline-grid; place-items: center; width: 34px; height: 34px; flex: 0 0 auto; background: #fff0e5; border-radius: 11px; color: #c2410c; font-size: 12px; font-weight: 800; }
+body.dark #editPostPage .ep-step { background: #513529; color: #fdba74; }
+#editPostPage .ep-upload-row, #editPostPage .ep-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 20px 0 13px; }
+#editPostPage .ep-file-button { display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
+#editPostPage .ep-message { margin: 13px 0 0; padding: 11px 14px; border-radius: 11px; background: rgba(249,115,22,.08); color: var(--ink); font-size: 12px; }
+#editPostPage .ep-message[data-error="true"] { background: rgba(225,29,72,.09); color: #be123c; }
+#editPostPage .ep-workspace { display: grid; grid-template-columns: minmax(230px, .8fr) minmax(0, 2fr); align-items: start; gap: 18px; }
+#editPostPage .ep-list-panel, #editPostPage .ep-detail-panel { padding: 23px; min-width: 0; }
+#editPostPage #epSearch { margin: 17px 0 13px; width: 100%; border-radius: 11px; }
+#editPostPage .ep-list { display: grid; gap: 8px; max-height: min(72vh, 720px); overflow: auto; }
+#editPostPage .ep-item { width: 100%; padding: 12px; text-align: left; border: 1px solid var(--line); border-radius: 13px; color: var(--ink); background: var(--panel); cursor: pointer; display: grid; gap: 5px; }
+#editPostPage .ep-item:hover, #editPostPage .ep-item.active { border-color: #f97316; background: rgba(249,115,22,.065); }
+#editPostPage .ep-item strong { font-size: 13px; }
+#editPostPage .ep-item small { color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+#editPostPage .ep-empty { padding: 34px 10px; color: var(--muted); text-align: center; font-size: 13px; }
+#editPostPage .ep-detail-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 14px; flex-wrap: wrap; }
+#editPostPage .ep-detail-top h3 { font-size: 19px; }
+#editPostPage .ep-pill { font-size: 11px; padding: 7px 10px; border-radius: 99px; background: #f3f4f6; color: #475569; }
+body.dark #editPostPage .ep-pill { background: #374151; color: #e2e8f0; }
+#editPostPage .ep-pill.ready { background: #dcfce7; color: #166534; }
+#editPostPage .ep-section { padding: 18px 0; border-top: 1px solid var(--line); }
+#editPostPage .ep-section:first-of-type { margin-top: 17px; }
+#editPostPage .ep-section h4 { margin: 0 0 13px; font-size: 14px; }
+#editPostPage .ep-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+#editPostPage .ep-form label, #editPostPage .ep-full { display: grid; gap: 6px; min-width: 0; color: var(--muted); font-size: 12px; }
+#editPostPage .ep-form input, #editPostPage .ep-form textarea { width: 100%; min-width: 0; border-radius: 10px; color: var(--ink); }
+#editPostPage .ep-form .ep-wide { grid-column: 1 / -1; }
+#editPostPage .ep-form textarea { min-height: 70px; resize: vertical; }
+#editPostPage .ep-url { display: block; overflow-wrap: anywhere; padding: 11px; border: 1px solid var(--line); border-radius: 10px; font-size: 12px; color: var(--ink); background: rgba(148,163,184,.05); }
+#editPostPage textarea.ep-url { width: 100%; min-height: 76px; resize: vertical; }
+#editPostPage .ep-url a { color: #ea580c; overflow-wrap: anywhere; }
+#editPostPage .ep-inline-note { margin: 8px 0; font-size: 12px; color: var(--muted); }
+#editPostPage .ep-warning { margin: 10px 0; padding: 10px 12px; border-radius: 10px; background: rgba(245,158,11,.1); color: #92400e; font-size: 12px; }
+body.dark #editPostPage .ep-warning { color: #fcd34d; }
+#editPostPage .ep-check { display: flex; gap: 9px; align-items: flex-start; font-size: 13px; line-height: 1.5; }
+#editPostPage .ep-check input { margin-top: 3px; accent-color: #ea580c; }
+#editPostPage .ep-actions { margin: 12px 0 0; }
+#editPostPage .ep-actions .btn { width: auto; }
+#editPostPage .ep-actions a.btn { display: inline-flex; align-items: center; text-decoration: none; }
+@media (max-width: 900px) { #editPostPage .ep-workspace { grid-template-columns: minmax(0, 1fr); } #editPostPage .ep-list { max-height: 245px; } }
+@media (max-width: 600px) { #editPostPage .ep-hero { display: block; padding: 21px; } #editPostPage .ep-stage { display: inline-block; margin-top: 16px; } #editPostPage .ep-list-panel, #editPostPage .ep-detail-panel, #editPostPage .ep-upload { padding: 18px; } #editPostPage .ep-form { grid-template-columns: minmax(0, 1fr); } }
