@@ -164,5 +164,6 @@
   }
   render();
   document.addEventListener('aff:publisher:open', () => loadPages(saved));
+  if (!$('facebookPublisherPage').hidden) loadPages(saved);
   root.addEventListener('beforeunload', () => { if (imageUrl) URL.revokeObjectURL(imageUrl); });
 })(typeof window !== 'undefined' ? window : globalThis);
