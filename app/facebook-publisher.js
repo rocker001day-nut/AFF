@@ -72,7 +72,7 @@
       const number = root.document.createElement('strong');
       number.textContent = String(index + 1).padStart(2, '0');
       const body = root.document.createElement('span');
-      body.textContent = job.page;
+      body.textContent = connectedPages.find(page => page.id === job.page)?.name || job.page;
       const time = root.document.createElement('time');
       time.dateTime = job.at;
       time.textContent = new Intl.DateTimeFormat('th-TH', {
@@ -119,7 +119,7 @@
       connectedPages.forEach(page => {
         const label = root.document.createElement('label');
         const check = root.document.createElement('input');
-        check.type = 'checkbox'; check.value = page.name || page.id;
+        check.type = 'checkbox'; check.value = page.id;
         check.dataset.pageId = page.id;
         check.checked = saved.includes(page.id);
         check.addEventListener('change', render);
@@ -129,7 +129,7 @@
       setStatus(connectedPages.length ? 'พบ ' + connectedPages.length + ' เพจ · เลือกเพจเพื่อดูคิว' : 'ไม่พบเพจที่บัญชีนี้จัดการได้');
     } catch (error) {
       $('fpPages').textContent = 'ยังไม่มีเพจที่เชื่อมต่อ';
-      setStatus(error.message + ' · ตอนนี้ดูตัวอย่างและบันทึกร่างได้', true);
+      setStatus((error instanceof SyntaxError ? 'บริการ Facebook ยังไม่พร้อม' : error.message) + ' · ตอนนี้ดูตัวอย่างและบันทึกร่างได้', true);
     }
     render();
   }
