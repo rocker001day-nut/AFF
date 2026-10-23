@@ -61,3 +61,11 @@
 .fp-card-ready a{overflow-wrap:anywhere;color:var(--accent-2);font-size:13px}
 .fp-card-ready .btn{justify-self:start}
 .fp-card-ready small{display:block;color:var(--muted);line-height:1.5}
+
+.fp-maker-action{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:18px}
+.fp-maker-action small{color:var(--muted)}
+.fp-card-maker .fp-status{margin:16px 0 0}
+.fp-ready-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.fp-ready-actions .btn{text-decoration:none}
+.fp-card-ready>strong{color:var(--accent-2);font-size:16px}
+@media(max-width:640px){.fp-maker-action .btn,.fp-ready-actions .btn{width:100%;justify-content:center}}
