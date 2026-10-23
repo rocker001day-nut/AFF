@@ -77,6 +77,8 @@
     try{
       const data=await api('status');
       connectedPages=data.pages||[];
+      $('fpConnect').disabled=!data.oauthReady;
+      $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'ผู้ดูแลต้องตั้งค่า Meta App ก่อน';
       $('fpPages').replaceChildren();
       for(const page of connectedPages){
         const label=root.document.createElement('label'),check=root.document.createElement('input');
