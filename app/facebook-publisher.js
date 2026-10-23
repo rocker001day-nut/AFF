@@ -133,6 +133,22 @@
       }
     }catch(error){status(error.message,true)}
   }
+  async function createCard(){
+    if(busy)return;
+    const file=$('fpImage').files?.[0],destination=validUrl($('fpDestination').value);
+    if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>8*1024*1024)return status('เลือกภาพ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true);
+    if(!destination)return status('กรุณาใส่ลิงก์ปลายทาง HTTPS',true);
+    busy=true;$('fpCreateCard').disabled=true;
+    try{
+      status('กำลังอัปโหลดภาพเพื่อสร้างลิงก์การ์ด…');
+      const image=await api('image','POST',file,file.type);
+      const result=await api('create-card','POST',{imagePath:image.path,caption:$('fpCaption').value,destination:destination.href});
+      $('fpCardLink').href=result.cardUrl;$('fpCardLink').textContent=result.cardUrl;
+      $('fpCardReady').hidden=false;
+      status('สร้างลิงก์แล้ว · คัดลอกไปวางในโพสต์ของเพจ Facebook เพื่อทดสอบ');
+    }catch(error){status(error.message,true)}
+    finally{busy=false;$('fpCreateCard').disabled=false}
+  }
   async function publish(now){
     if(busy)return;
     const file=$('fpImage').files?.[0],destination=validUrl($('fpDestination').value),pages=selectedPages(),delay=Number($('fpDelay').value);
@@ -157,7 +173,7 @@
   $('fpImage').addEventListener('change',event=>{
     const file=event.target.files?.[0];
     if(imageUrl)URL.revokeObjectURL(imageUrl);
-    imageUrl='';
+    imageUrl='';$('fpCardReady').hidden=true;
     if(file){
       if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){event.target.value='';status('ใช้ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true)}
       else{imageUrl=URL.createObjectURL(file);$('fpImageName').textContent=file.name}
@@ -166,7 +182,13 @@
   });
   $('fpPreviewLink').addEventListener('click',event=>{if(!validUrl($('fpDestination').value))event.preventDefault()});
   ['fpCaption','fpDestination','fpStart','fpDelay'].forEach(id=>$(id).addEventListener('input',render));
+  ['fpCaption','fpDestination'].forEach(id=>$(id).addEventListener('input',()=>{$('fpCardReady').hidden=true}));
   $('fpSaveDraft').addEventListener('click',saveDraft);
+  $('fpCreateCard').addEventListener('click',createCard);
+  $('fpCopyCard').addEventListener('click',async()=>{
+    try{await root.navigator.clipboard.writeText($('fpCardLink').href);status('คัดลอกลิงก์การ์ดแล้ว · วางในโพสต์ของเพจ Facebook ได้เลย')}
+    catch{status('คัดลอกอัตโนมัติไม่ได้ กดลิงก์ค้างไว้เพื่อคัดลอก',true)}
+  });
   $('fpConnect').addEventListener('click',connect);
   $('fpSaveApp').addEventListener('click',saveApp);
   $('fpPublishNow').addEventListener('click',()=>publish(true));
