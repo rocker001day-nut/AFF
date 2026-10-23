@@ -112,7 +112,9 @@
         name.textContent=connectedPages.find(p=>p.id===job.page_id)?.name||job.page_id;
         detail.textContent=({'queued':'รอส่ง','processing':'กำลังส่ง','posted':'โพสต์สำเร็จ','failed':'ไม่สำเร็จ','uncertain':'รอตรวจผล'}[job.status]||job.status)+(job.facebook_post_id?' · '+job.facebook_post_id:'')+(job.error?' · '+job.error:'');
         time.textContent=new Intl.DateTimeFormat('th-TH',{dateStyle:'short',timeStyle:'short',timeZone:'Asia/Bangkok'}).format(new Date(job.scheduled_at));
-        li.append(name,detail,time);list.appendChild(li);
+        li.append(name,detail,time);
+        if(job.status==='posted'&&job.permalink){const link=root.document.createElement('a');link.href=job.permalink;link.target='_blank';link.rel='noopener noreferrer';link.textContent='ดูโพสต์บน Facebook';li.appendChild(link)}
+        list.appendChild(li);
       }
     }catch(error){status(error.message,true)}
   }
