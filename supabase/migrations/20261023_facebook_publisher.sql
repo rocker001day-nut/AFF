@@ -62,3 +62,11 @@ set search_path = '' as $$
 $$;
 revoke all on function public.facebook_claim_due_job() from public,anon,authenticated;
 grant execute on function public.facebook_claim_due_job() to service_role;
+create table if not exists public.facebook_publisher_oauth_states(
+  state text primary key,
+  user_id uuid not null references auth.users(id),
+  expires_at timestamptz not null default (now()+interval '10 minutes')
+);
+alter table public.facebook_publisher_oauth_states enable row level security;
+revoke all on public.facebook_publisher_oauth_states from anon,authenticated,public;
+grant all on public.facebook_publisher_oauth_states to service_role;
