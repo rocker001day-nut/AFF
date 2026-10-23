@@ -77,9 +77,11 @@
     try{
       const data=await api('status');
       connectedPages=data.pages||[];
+      $('fpProviderSetup').hidden=!data.canConfigure||data.oauthReady;
       $('fpAppSetup').hidden=!data.canConfigure||data.oauthReady;
+      $('fpConnectionMode').textContent=data.provider==='upload-post'?'เชื่อมผ่าน Upload-Post · เลือกเพจใน Facebook ได้':'เชื่อมผ่าน Meta App ของ AFF';
       $('fpConnect').disabled=!data.oauthReady;
-      $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'ผู้ดูแลต้องตั้งค่า Meta App ก่อน';
+      $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'เจ้าของเว็บตั้งค่าการเชื่อม Facebook หนึ่งครั้งก่อน';
       $('fpPages').replaceChildren();
       for(const page of connectedPages){
         const label=root.document.createElement('label'),check=root.document.createElement('input');
@@ -89,8 +91,9 @@
         $('fpPages').appendChild(label);
       }
       if(!connectedPages.length)$('fpPages').textContent='ยังไม่พบเพจ กด “เชื่อม Facebook และดึงเพจ”';
-      status(connectedPages.length?'เลือกเพจที่ต้องการโพสต์ ('+connectedPages.length+' เพจ)':
-        data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':'ยังต้องตั้งค่า Meta App ของระบบก่อนเชื่อม Facebook',!connectedPages.length);
+      status(data.syncError||(
+        connectedPages.length?'เลือกเพจที่ต้องการโพสต์ ('+connectedPages.length+' เพจ)':
+        data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':'เจ้าของเว็บต้องตั้งค่าการเชื่อมเพจด้านล่างหนึ่งครั้ง'),!!data.syncError||!connectedPages.length);
     }catch(error){$('fpPages').textContent='ยังโหลดเพจไม่ได้';status(error.message,true)}
     render();
   }
@@ -98,9 +101,23 @@
     try{
       $('fpConnect').disabled=true;
       const data=await api('login','POST',{});
-      if(!data.url||!data.url.startsWith('https://www.facebook.com/'))throw Error('ลิงก์ Facebook Login ไม่ถูกต้อง');
+      const connectUrl=new URL(data.url||'');
+      if(connectUrl.protocol!=='https:'||!['www.facebook.com','app.upload-post.com'].includes(connectUrl.hostname))throw Error('ลิงก์เชื่อม Facebook ไม่ถูกต้อง');
       root.location.assign(data.url);
     }catch(error){status(error.message,true);$('fpConnect').disabled=false}
+  }
+  async function saveProvider(){
+    const apiKey=$('fpProviderKey').value.trim(),button=$('fpSaveProvider');
+    if(apiKey.length<12)return status('ใส่ API key ของ Upload-Post เพื่อเปิดการเชื่อมเพจ',true);
+    button.disabled=true;
+    try{
+      status('กำลังตรวจ API key ของ Upload-Post…');
+      await api('configure-upload-post','POST',{apiKey});
+      $('fpProviderKey').value='';
+      await loadPages();
+      status('เชื่อมระบบแล้ว กด “เชื่อม Facebook และดึงเพจ”');
+    }catch(error){status(error.message,true)}
+    finally{button.disabled=false}
   }
   async function saveApp(){
     const appId=$('fpAppId').value.trim(),appSecret=$('fpAppSecret').value.trim();
@@ -191,6 +208,7 @@
   });
   $('fpConnect').addEventListener('click',connect);
   $('fpSaveApp').addEventListener('click',saveApp);
+  $('fpSaveProvider').addEventListener('click',saveProvider);
   $('fpPublishNow').addEventListener('click',()=>publish(true));
   $('fpSchedule').addEventListener('click',()=>publish(false));
   $('fpRefreshResults').addEventListener('click',loadJobs);
@@ -199,5 +217,6 @@
   root.document.addEventListener('aff:publisher:open',()=>{loadPages();loadJobs()});
   if(root.location.hash==='#publisher')root.document.querySelector('[data-page-target="publisher"]')?.click();
   if(!$('facebookPublisherPage').hidden){loadPages();loadJobs()}
+  root.setInterval(()=>{if(!$('facebookPublisherPage').hidden&&connectedPages.length)loadJobs()},10000);
   root.addEventListener('beforeunload',()=>{if(imageUrl)URL.revokeObjectURL(imageUrl)});
 })(typeof window!=='undefined'?window:globalThis);
