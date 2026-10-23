@@ -69,3 +69,5 @@
 .fp-ready-actions .btn{text-decoration:none}
 .fp-card-ready>strong{color:var(--accent-2);font-size:16px}
 @media(max-width:640px){.fp-maker-action .btn,.fp-ready-actions .btn{width:100%;justify-content:center}}
+
+.fp-card-maker .fp-status:empty{display:none}
