@@ -131,9 +131,9 @@ Deno.serve(async req=>{
     const url=new URL(req.url),action=url.searchParams.get('action')||'status';
     if(req.method==='OPTIONS')return new Response(null,{status:204,headers:headers(req)});
     if(!originAllowed(req.headers.get('origin')))throw problem('Origin not allowed',403);
-    if(action==='card'&&req.method==='GET')return card(req,url.searchParams.get('id'));
-    if(action==='callback'&&req.method==='GET')return callback(req);
-    if(action==='worker'&&req.method==='POST')return worker(req);
+    if(action==='card'&&req.method==='GET')return await card(req,url.searchParams.get('id'));
+    if(action==='callback'&&req.method==='GET')return await callback(req);
+    if(action==='worker'&&req.method==='POST')return await worker(req);
     const user=await member(req);
     if(action==='login'&&req.method==='POST'){
       const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
