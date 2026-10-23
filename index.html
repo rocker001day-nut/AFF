@@ -2874,6 +2874,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
 
 </style>
 <link rel="stylesheet" href="app/edit-post.css">
+  <link rel="stylesheet" href="app/facebook-publisher.css">
   <script data-aff-bundle>
 (function (root) {
   "use strict";
@@ -3120,6 +3121,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <button class="app-nav-btn" type="button" data-page-target="dorm">หอพัก</button>
         <button class="app-nav-btn" type="button" data-page-target="facebook">จัดการแฟนเพจ</button>
         <button class="app-nav-btn" type="button" data-page-target="editpost">แก้โพสต์ + Ads</button>
+        <button class="app-nav-btn" type="button" data-page-target="publisher">โพสต์ภาพ + ลิงก์</button>
       </nav>
 
     </div>
@@ -3842,6 +3844,58 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <section class="panel ep-detail-panel" id="epDetail"><div class="ep-empty">เลือกรายการทางซ้ายเพื่อดูรายละเอียด</div></section>
       </section>
     </div>
+    <div class="app-page" id="facebookPublisherPage" hidden>
+      <section class="panel fp-hero">
+        <div><span class="fp-chip">FACEBOOK · AFF</span><h2>สร้างโพสต์ภาพแบบกดไปลิงก์</h2><p>ใส่ภาพ ข้อความ และ URL ปลายทาง เลือกเพจ แล้วดูเวลาโพสต์ของแต่ละเพจ</p></div>
+        <span class="fp-chip">โพสต์ผ่าน Facebook Login</span>
+      </section>
+      <div class="fp-workspace">
+        <div class="fp-form">
+          <section class="fp-card">
+            <h3>01 · เตรียมโพสต์</h3>
+            <p>รูปเดียวและข้อความเดียวกันสำหรับทุกเพจที่เลือก</p>
+            <div class="fp-fields">
+              <label class="fp-image-picker">เลือกรูป JPG / PNG / WebP
+                <input id="fpImage" type="file" accept="image/jpeg,image/png,image/webp">
+                <small id="fpImageName">ขนาดไม่เกิน 8 MB · อัปโหลดเมื่อกดส่ง</small>
+              </label>
+              <label>ข้อความโพสต์<textarea id="fpCaption" placeholder="เขียนแคปชั่นที่ต้องการให้แสดงเหนือภาพ"></textarea></label>
+              <label>ลิงก์ปลายทางเมื่อกดภาพ<input id="fpDestination" type="url" inputmode="url" placeholder="https://..." autocomplete="url">
+                <small>ลิงก์นี้จะเปิดเมื่อคนกดการ์ดภาพบน Facebook</small>
+              </label>
+            </div>
+          </section>
+          <section class="fp-card">
+            <h3>02 · เลือกเพจและเวลา</h3>
+            <p>ระบบจะใช้โพสต์ชุดเดียวกันและเว้นเวลาตามลำดับเพจ</p>
+            <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
+            <div class="fp-fields">
+              
+              <div class="fp-two">
+                <label>เริ่มโพสต์เวลา<input id="fpStart" type="datetime-local"></label>
+                <label>เว้นระยะต่อเพจ (วินาที)<input id="fpDelay" type="number" min="5" max="3600" step="1" value="30"></label>
+              </div>
+            </div>
+            <div class="fp-actions"><button class="btn" id="fpSaveDraft" type="button">บันทึกร่าง</button><button class="btn upload" id="fpPublishNow" type="button">โพสต์ตอนนี้</button><button class="btn" id="fpSchedule" type="button">ตั้งคิวตามเวลา</button><small>แต่ละเพจจะส่งตามดีเลย์ที่กำหนด และตรวจผล Facebook ในตารางด้านล่าง</small></div>
+            <p class="fp-status" id="fpStatus" role="status" aria-live="polite">กำลังตรวจการเชื่อม Facebook</p>
+          </section>
+        </div>
+        <div class="fp-side">
+          <section class="fp-card">
+            <h3>ตัวอย่างภาพที่กดได้</h3>
+            <p>หน้าตาบน Facebook จริงอาจต่างจากตัวอย่างนี้</p>
+            <div class="fp-preview"><div class="fp-preview-top"><span class="fp-avatar">F</span><div><strong>เพจที่เลือก</strong><small>ตัวอย่างโพสต์ · สาธารณะ</small></div></div>
+              <p class="fp-preview-text" id="fpPreviewText">ข้อความโพสต์จะแสดงตรงนี้</p>
+              <a id="fpPreviewLink" class="fp-preview-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="ดูตัวอย่างปลายทางเมื่อกดภาพ">
+                <div id="fpImageEmpty" class="fp-image-empty">อัปโหลดรูปเพื่อดูตัวอย่าง</div><img id="fpPreviewImage" class="fp-preview-image" alt="ภาพโพสต์ตัวอย่าง" hidden>
+                <div class="fp-preview-bottom"><div><small id="fpPreviewDomain">URL ปลายทาง</small><strong>เปิดลิงก์จากภาพ</strong></div><span>เรียนรู้เพิ่มเติม</span></div>
+              </a>
+            </div>
+          </section>
+          <section class="fp-card"><div class="fp-queue-heading"><h3>03 · ตารางคิว</h3><small id="fpQueueCount">0 เพจ</small></div><p>ตรวจเวลาและเพจก่อนส่ง</p><ol class="fp-queue" id="fpQueue"></ol></section><section class="fp-card"><h3>ผลโพสต์จริง</h3><p>ดูรหัสโพสต์ที่ Facebook ตอบกลับ หรือสาเหตุที่ส่งไม่สำเร็จ</p><ol class="fp-queue" id="fpResults"></ol><button class="btn" id="fpRefreshResults" type="button">รีเฟรชผล</button></section>
+        </div>
+      </div>
+    </div>
 
   </main>
 
@@ -4059,15 +4113,17 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function setActivePage(page) {
-      const targetPage = ["facebook", "editpost", "office", "dorm", "autosync"].includes(page) ? page : "dashboard";
+      const targetPage = ["facebook", "editpost", "publisher", "office", "dorm", "autosync"].includes(page) ? page : "dashboard";
       dashboardPageEl.hidden = targetPage !== "dashboard";
       autoSyncPageEl.hidden = targetPage !== "autosync";
       aiOfficePageEl.hidden = targetPage !== "office";
       dormPageEl.hidden = targetPage !== "dorm";
       document.getElementById("facebookPage").hidden = targetPage !== "facebook";
       document.getElementById("editPostPage").hidden = targetPage !== "editpost";
+      document.getElementById("facebookPublisherPage").hidden = targetPage !== "publisher";
       if (targetPage === "facebook") document.dispatchEvent(new CustomEvent("aff:facebook:open"));
       if (targetPage === "editpost") document.dispatchEvent(new CustomEvent("aff:edit-post:open"));
+      if (targetPage === "publisher") document.dispatchEvent(new CustomEvent("aff:publisher:open"));
       if (targetPage === "autosync") document.dispatchEvent(new CustomEvent("aff:auto-sync:open"));
       document.querySelectorAll("[data-page-target]").forEach((button) => {
         const isActive = button.dataset.pageTarget === targetPage;
@@ -8141,6 +8197,7 @@ function exportExcel() {
   <script src="app/multi-account.js" defer></script>
   <script src="app/connector-client.js" defer></script>
   <script src="app/edit-post.js" defer></script>
+  <script src="app/facebook-publisher.js" defer></script>
 <script data-aff-facebook>
 (function () {
   'use strict';
