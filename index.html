@@ -2874,7 +2874,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
 
 </style>
 <link rel="stylesheet" href="app/edit-post.css">
-  <link rel="stylesheet" href="app/facebook-publisher.css?v=20261023-card">
+  <link rel="stylesheet" href="app/facebook-publisher.css?v=20261023-card2">
   <script data-aff-bundle>
 (function (root) {
   "use strict";
@@ -3846,34 +3846,30 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     </div>
     <div class="app-page" id="facebookPublisherPage" hidden>
       <section class="panel fp-hero">
-        <div><span class="fp-chip">FACEBOOK · AFF</span><h2>สร้างโพสต์ภาพแบบกดไปลิงก์</h2><p>ใส่ภาพ ข้อความ และ URL ปลายทาง เลือกเพจ แล้วดูเวลาโพสต์ของแต่ละเพจ</p></div>
-        <span class="fp-chip">โพสต์ผ่าน Facebook Login</span>
+        <div><span class="fp-chip">FACEBOOK · AFF</span><h2>สร้างการ์ดภาพกดไปลิงก์</h2><p>เลือกภาพ ใส่ลิงก์ปลายทาง แล้วสร้างการ์ดไว้แชร์บน Facebook</p></div>
+        <span class="fp-chip">สร้างลิงก์ได้ทันที</span>
       </section>
       <div class="fp-workspace">
         <div class="fp-form">
-          <section class="fp-card">
-            <h3>01 · เตรียมโพสต์</h3>
-            <p>รูปเดียวและข้อความเดียวกันสำหรับทุกเพจที่เลือก</p>
+          <section class="fp-card fp-card-maker">
+            <h3>01 · สร้างการ์ดภาพ</h3>
+            <p>อัปภาพแล้วใส่ URL ที่ต้องการให้คนไปเมื่อกดภาพ</p>
             <div class="fp-fields">
-              <label class="fp-image-picker">เลือกรูป JPG / PNG / WebP
+              <label class="fp-image-picker">1. เลือกรูป JPG / PNG / WebP
                 <input id="fpImage" type="file" accept="image/jpeg,image/png,image/webp">
-                <small id="fpImageName">ขนาดไม่เกิน 8 MB · อัปโหลดเมื่อกดส่ง</small>
+                <small id="fpImageName">ขนาดไม่เกิน 8 MB · ระบบจะอัปโหลดเมื่อกดสร้าง</small>
               </label>
-              <label>ข้อความโพสต์<textarea id="fpCaption" placeholder="เขียนแคปชั่นที่ต้องการให้แสดงเหนือภาพ"></textarea></label>
-              <label>ลิงก์ปลายทางเมื่อกดภาพ<input id="fpDestination" type="url" inputmode="url" placeholder="https://..." autocomplete="url">
-                <small>ลิงก์นี้จะเปิดเมื่อคนกดการ์ดภาพบน Facebook</small>
+              <label>2. ลิงก์ปลายทางเมื่อกดภาพ<input id="fpDestination" type="url" inputmode="url" placeholder="https://..." autocomplete="url">
+                <small>ใส่ลิงก์สินค้าหรือหน้าเว็บปลายทางแบบ HTTPS</small>
               </label>
+              <label>3. ข้อความโพสต์ (ไม่บังคับ)<textarea id="fpCaption" placeholder="เขียนข้อความที่ต้องการให้แสดงเหนือการ์ด"></textarea></label>
             </div>
+            <div class="fp-maker-action"><button class="btn upload" id="fpCreateCard" type="button">สร้างภาพแนบลิงก์</button><small>ใช้ได้ทันทีโดยไม่ต้องเชื่อม Facebook ก่อน</small></div>
+            <div id="fpCardReady" class="fp-card-ready" hidden><strong>สร้างการ์ดสำเร็จ</strong><p>กดคัดลอก แล้ววางลิงก์นี้ในช่องสร้างโพสต์ของเพจ Facebook เพื่อตรวจภาพตัวอย่างก่อนเผยแพร่</p><a id="fpCardLink" href="#" target="_blank" rel="noopener noreferrer"></a><div class="fp-ready-actions"><button class="btn upload" id="fpCopyCard" type="button">คัดลอกลิงก์การ์ด</button><a class="btn" href="https://www.facebook.com/" target="_blank" rel="noopener noreferrer">เปิด Facebook</a></div><small>Facebook แสดงเป็นพรีวิวลิงก์ที่คลิกภาพแล้วไป URL ปลายทาง รูปและปุ่มขึ้นอยู่กับการแสดงผลของ Facebook</small></div><p class="fp-status" id="fpStatus" role="status" aria-live="polite">กำลังตรวจการเชื่อม Facebook</p>
           </section>
           <section class="fp-card">
-            <h3>ทดสอบภาพที่กดไปลิงก์</h3>
-            <p>สร้างลิงก์จากภาพด้านบน แล้วคัดลอกไปวางในโพสต์ของเพจ Facebook ที่ล็อกอินอยู่ได้ทันที Facebook จะโหลดภาพเป็นตัวอย่างลิงก์ให้ตรวจสอบก่อนกดโพสต์</p>
-            <button class="btn upload" id="fpCreateCard" type="button">สร้างลิงก์การ์ดจากภาพ</button>
-            <div id="fpCardReady" class="fp-card-ready" hidden><p>คัดลอกลิงก์นี้ไปวางในช่องสร้างโพสต์ของเพจ:</p><a id="fpCardLink" href="#" target="_blank" rel="noopener noreferrer"></a><button class="btn" id="fpCopyCard" type="button">คัดลอกลิงก์</button><small>นี่คือโพสต์แบบลิงก์พรีวิว: ภาพกดไปเว็บไซต์ปลายทางได้ หน้าตาภาพและปุ่มขึ้นอยู่กับ Facebook</small></div>
-          </section>
-          <section class="fp-card">
-            <h3>02 · เลือกเพจและเวลา</h3>
-            <p>ระบบจะใช้โพสต์ชุดเดียวกันและเว้นเวลาตามลำดับเพจ</p>
+            <h3>02 · โพสต์หลายเพจอัตโนมัติ (เมื่อตั้งค่าการเชื่อมแล้ว)</h3>
+            <p>เชื่อมเพจของคุณ แล้วเลือกหลายเพจเพื่อโพสต์ภาพและข้อความเดียวกันตามดีเลย์ที่ตั้งไว้</p>
             <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><small id="fpConnectionMode">กำลังตรวจวิธีเชื่อมต่อ…</small><details id="fpProviderSetup" class="fp-setup" hidden><summary>ขั้นตอนแรกสำหรับเจ้าของเว็บ: เปิดการเชื่อม Facebook</summary><p>เจ้าของเว็บสมัคร <a href="https://app.upload-post.com/" target="_blank" rel="noopener noreferrer">Upload-Post</a> แล้วนำ API key ของบริการมาตั้งค่าครั้งเดียว จากนั้นสมาชิก AFF กดปุ่มเชื่อม Facebook และเลือกเพจได้โดยไม่กรอก Page token · บริการมีโควตาและแผนตามบัญชีที่สมัคร</p><div class="fp-fields"><label>Upload-Post API key<input id="fpProviderKey" type="password" autocomplete="new-password" spellcheck="false"></label><button class="btn" id="fpSaveProvider" type="button">บันทึกและตรวจการเชื่อมต่อ</button></div></details><details id="fpAppSetup" class="fp-setup" hidden><summary>ทางเลือก: ใช้ Meta App ของ AFF เอง</summary><p>เจ้าของเว็บสร้างแอปที่ <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta for Developers</a> แล้วนำ App ID กับ App Secret มาตั้งค่าครั้งเดียว ช่องนี้ไม่ใช่ Page token</p><p>ตั้งค่า Valid OAuth Redirect URI เป็น <code>https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback</code> และขอสิทธิ์ pages_show_list, pages_read_engagement, pages_manage_posts</p><div class="fp-fields"><label>Meta App ID<input id="fpAppId" inputmode="numeric" autocomplete="off"></label><label>Meta App Secret<input id="fpAppSecret" type="password" autocomplete="new-password"></label><button class="btn" id="fpSaveApp" type="button">บันทึกการตั้งค่าแอป</button></div></details><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
             <div class="fp-fields">
               
@@ -3883,13 +3879,13 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
               </div>
             </div>
             <div class="fp-actions"><button class="btn" id="fpSaveDraft" type="button">บันทึกร่าง</button><button class="btn upload" id="fpPublishNow" type="button">โพสต์ตอนนี้</button><button class="btn" id="fpSchedule" type="button">ตั้งคิวตามเวลา</button><small>แต่ละเพจจะส่งตามดีเลย์ที่กำหนด และตรวจผล Facebook ในตารางด้านล่าง</small></div>
-            <p class="fp-status" id="fpStatus" role="status" aria-live="polite">กำลังตรวจการเชื่อม Facebook</p>
+            
           </section>
         </div>
         <div class="fp-side">
           <section class="fp-card">
-            <h3>ตัวอย่างภาพที่กดได้</h3>
-            <p>หน้าตาบน Facebook จริงอาจต่างจากตัวอย่างนี้</p>
+            <h3>ตัวอย่างการ์ดภาพ</h3>
+            <p>ภาพบน Facebook จริงอาจต่างจากตัวอย่างนี้ · ดูผลจริงก่อนกดเผยแพร่</p>
             <div class="fp-preview"><div class="fp-preview-top"><span class="fp-avatar">F</span><div><strong>เพจที่เลือก</strong><small>ตัวอย่างโพสต์ · สาธารณะ</small></div></div>
               <p class="fp-preview-text" id="fpPreviewText">ข้อความโพสต์จะแสดงตรงนี้</p>
               <a id="fpPreviewLink" class="fp-preview-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="ดูตัวอย่างปลายทางเมื่อกดภาพ">
