@@ -4,6 +4,7 @@
   const ENDPOINT='https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher';
   const $=id=>root.document&&root.document.getElementById(id);
   let imageUrl='',connectedPages=[],busy=false;
+  let pendingExtensionConnect=new URL(root.location.href).searchParams.get('affConnect')==='1';
   function validUrl(value){try{const u=new URL(String(value||'').trim());return u.protocol==='https:'&&u.hostname?u:null}catch{return null}}
   function planTimes(start,delaySeconds,pages){
     const base=Number(start),delay=Number(delaySeconds);
@@ -107,6 +108,14 @@
       status(data.syncError||(
         connectedPages.length?'เลือกเพจที่ต้องการโพสต์ ('+connectedPages.length+' เพจ)':
         data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':data.canConfigure?'ขั้นตอนแรก: ตั้งค่าระบบเชื่อมเพจในช่องที่เปิดอยู่ด้านล่าง':'ยังเชื่อม Facebook ไม่ได้ · แจ้งเจ้าของเว็บเปิดการเชื่อมเพจก่อน'),!!data.syncError||!connectedPages.length);
+      if(pendingExtensionConnect){
+        pendingExtensionConnect=false;
+        const cleanUrl=new URL(root.location.href);
+        cleanUrl.searchParams.delete('affConnect');
+        root.history.replaceState(root.history.state,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash);
+        if(data.oauthReady)await connect();
+        else status('พบส่วนขยายแล้ว · เจ้าของเว็บต้องเปิดการเชื่อม Facebook ก่อนจึงจะดึงเพจได้',true);
+      }
     }catch(error){$('fpPages').textContent='ยังโหลดเพจไม่ได้';status(error.message,true)}
     render();
   }
