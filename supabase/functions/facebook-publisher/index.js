@@ -147,16 +147,6 @@ Deno.serve(async req=>{
       const result=await admin.from('facebook_publisher_pages').select('id,name,connected_by,updated_at').order('name');check(result.error);
       return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!(Deno.env.get('META_APP_ID')&&Deno.env.get('META_APP_SECRET')),pages:result.data});
     }
-    if(action==='connect'&&req.method==='POST'){
-      const body=await req.json(),token=String(body.token||'').trim();
-      if(token.length<30||token.length>1000)throw problem('กรุณาใส่ Page access token ที่ถูกต้อง');
-      const page=await graph('me?fields=id,name',token);
-      if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.name)throw problem('Token นี้ไม่ใช่ Page access token');
-      const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',page.id).maybeSingle();check(existing.error);
-      if(existing.data&&existing.data.connected_by!==user.id)throw problem('เพจนี้เชื่อมโดยสมาชิกทีมคนอื่น',403);
-      const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name,connected_by:user.id,access_token_enc:await encrypt(token),updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
-      return send(req,{ok:true,page:{id:page.id,name:page.name}});
-    }
     if(action==='image'&&req.method==='POST'){
       const type=(req.headers.get('content-type')||'').split(';')[0].trim();
       const ext={'image/jpeg':'jpg','image/png':'png','image/webp':'webp'}[type];
