@@ -54,3 +54,10 @@
 .fp-setup code{display:inline-block;max-width:100%;overflow-wrap:anywhere;white-space:normal;padding:4px;background:var(--bg);color:var(--ink);border-radius:6px}
 .fp-setup a{color:var(--accent-2)}
 .fp-results a{font-size:13px}
+
+.fp-card-ready{display:grid;gap:9px;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.fp-card-ready[hidden]{display:none}
+.fp-card-ready p{margin:0}
+.fp-card-ready a{overflow-wrap:anywhere;color:var(--accent-2);font-size:13px}
+.fp-card-ready .btn{justify-self:start}
+.fp-card-ready small{display:block;color:var(--muted);line-height:1.5}
