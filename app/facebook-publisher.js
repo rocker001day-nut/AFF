@@ -77,6 +77,7 @@
     try{
       const data=await api('status');
       connectedPages=data.pages||[];
+      $('fpAppSetup').hidden=!data.canConfigure||data.oauthReady;
       $('fpConnect').disabled=!data.oauthReady;
       $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'ผู้ดูแลต้องตั้งค่า Meta App ก่อน';
       $('fpPages').replaceChildren();
@@ -100,6 +101,20 @@
       if(!data.url||!data.url.startsWith('https://www.facebook.com/'))throw Error('ลิงก์ Facebook Login ไม่ถูกต้อง');
       root.location.assign(data.url);
     }catch(error){status(error.message,true);$('fpConnect').disabled=false}
+  }
+  async function saveApp(){
+    const appId=$('fpAppId').value.trim(),appSecret=$('fpAppSecret').value.trim();
+    if(!/^[0-9]{5,30}$/.test(appId)||appSecret.length<20)return status('ตรวจ App ID และ App Secret จาก Meta for Developers',true);
+    const button=$('fpSaveApp');
+    button.disabled=true;
+    try{
+      status('กำลังตรวจ App ID กับ Meta…');
+      await api('configure','POST',{appId,appSecret});
+      $('fpAppSecret').value='';
+      status('ตั้งค่าแอปแล้ว กดเชื่อม Facebook เพื่อดึงเพจ');
+      await loadPages();
+    }catch(error){status(error.message,true)}
+    finally{button.disabled=false}
   }
   async function loadJobs(){
     try{
@@ -153,6 +168,7 @@
   ['fpCaption','fpDestination','fpStart','fpDelay'].forEach(id=>$(id).addEventListener('input',render));
   $('fpSaveDraft').addEventListener('click',saveDraft);
   $('fpConnect').addEventListener('click',connect);
+  $('fpSaveApp').addEventListener('click',saveApp);
   $('fpPublishNow').addEventListener('click',()=>publish(true));
   $('fpSchedule').addEventListener('click',()=>publish(false));
   $('fpRefreshResults').addEventListener('click',loadJobs);
