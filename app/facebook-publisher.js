@@ -15,6 +15,7 @@
   if(typeof module!=='undefined'&&module.exports)module.exports=root.AffPublisherDraft;
   if(!$('facebookPublisherPage'))return;
   function status(message,error=false){$('fpStatus').textContent=message;$('fpStatus').dataset.error=String(error)}
+  function cardStatus(message,error=false){$('fpCardStatus').textContent=message;$('fpCardStatus').dataset.error=String(error)}
   function selectedPages(){return [...$('fpPages').querySelectorAll('input:checked')].map(el=>el.value)}
   async function api(action,method='GET',body,contentType){
     const client=root.__affSupabaseClient||root.supabaseClient;
@@ -154,17 +155,17 @@
   async function createCard(){
     if(busy)return;
     const file=$('fpImage').files?.[0],destination=validUrl($('fpDestination').value);
-    if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>8*1024*1024)return status('เลือกภาพ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true);
-    if(!destination)return status('กรุณาใส่ลิงก์ปลายทาง HTTPS',true);
+    if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type)||!file.size||file.size>8*1024*1024)return cardStatus('เลือกภาพ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true);
+    if(!destination)return cardStatus('กรุณาใส่ลิงก์ปลายทาง HTTPS',true);
     busy=true;$('fpCreateCard').disabled=true;
     try{
-      status('กำลังอัปโหลดภาพเพื่อสร้างลิงก์การ์ด…');
+      cardStatus('กำลังอัปโหลดภาพเพื่อสร้างลิงก์การ์ด…');
       const image=await api('image','POST',file,file.type);
       const result=await api('create-card','POST',{imagePath:image.path,caption:$('fpCaption').value,destination:destination.href});
       $('fpCardLink').href=result.cardUrl;$('fpCardLink').textContent=result.cardUrl;
       $('fpCardReady').hidden=false;
-      status('สร้างลิงก์แล้ว · คัดลอกไปวางในโพสต์ของเพจ Facebook เพื่อทดสอบ');
-    }catch(error){status(error.message,true)}
+      cardStatus('สร้างลิงก์แล้ว · คัดลอกไปวางในโพสต์ของเพจ Facebook เพื่อทดสอบ');
+    }catch(error){cardStatus(error.message,true)}
     finally{busy=false;$('fpCreateCard').disabled=false}
   }
   async function publish(now){
@@ -193,7 +194,7 @@
     if(imageUrl)URL.revokeObjectURL(imageUrl);
     imageUrl='';$('fpCardReady').hidden=true;
     if(file){
-      if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){event.target.value='';status('ใช้ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true)}
+      if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>8*1024*1024){event.target.value='';cardStatus('ใช้ JPG, PNG หรือ WebP ไม่เกิน 8 MB',true)}
       else{imageUrl=URL.createObjectURL(file);$('fpImageName').textContent=file.name}
     }
     render();
@@ -204,8 +205,8 @@
   $('fpSaveDraft').addEventListener('click',saveDraft);
   $('fpCreateCard').addEventListener('click',createCard);
   $('fpCopyCard').addEventListener('click',async()=>{
-    try{await root.navigator.clipboard.writeText($('fpCardLink').href);status('คัดลอกลิงก์การ์ดแล้ว · วางในโพสต์ของเพจ Facebook ได้เลย')}
-    catch{status('คัดลอกอัตโนมัติไม่ได้ กดลิงก์ค้างไว้เพื่อคัดลอก',true)}
+    try{await root.navigator.clipboard.writeText($('fpCardLink').href);cardStatus('คัดลอกลิงก์การ์ดแล้ว · วางในโพสต์ของเพจ Facebook ได้เลย')}
+    catch{cardStatus('คัดลอกอัตโนมัติไม่ได้ กดลิงก์ค้างไว้เพื่อคัดลอก',true)}
   });
   $('fpConnect').addEventListener('click',connect);
   $('fpSaveApp').addEventListener('click',saveApp);
