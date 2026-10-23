@@ -21,9 +21,9 @@
 
 `https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback`
 
-ตั้งค่า Supabase Edge Function secrets `META_APP_ID` และ `META_APP_SECRET` ของแอป Meta ที่มีสิทธิ์ `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` และเพิ่มโดเมน AFF ใน Meta App Dashboard. **ห้ามส่ง App Secret หรือ Page token ในแชตหรือ commit ลง Git.** ผู้ที่ใช้แอปนอกบทบาท developer/tester อาจต้องขอ Advanced Access/App Review ตามการตั้งค่าของแอป.
+เจ้าของเว็บกรอก App ID และ App Secret ในหัวข้อ “ตั้งค่าแอป Facebook สำหรับเว็บนี้ครั้งแรก” บนหน้า AFF; ระบบจะให้ Meta ตรวจความถูกต้องก่อนเข้ารหัสเก็บฝั่งเซิร์ฟเวอร์ และจะไม่แสดง Secret อีก วิธีสำรองสำหรับผู้ดูแลระบบคือกำหนด Supabase Edge Function secrets `META_APP_ID` และ `META_APP_SECRET` ซึ่งจะมีลำดับเหนือกว่าค่าที่ตั้งผ่านเว็บ แอป Meta ต้องมีสิทธิ์ `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` และตั้งค่าโดเมน AFF ใน Meta App Dashboard. **ห้ามส่ง App Secret หรือ Page token ในแชตหรือ commit ลง Git.** ผู้ที่ใช้แอปนอกบทบาท developer/tester อาจต้องขอ Advanced Access/App Review ตามการตั้งค่าของแอป.
 
-ตอนนี้ยังไม่มี Meta App secrets ของ AFF ใน Supabase และยังไม่มี Facebook Page ที่เชื่อมในระบบ: worker และฐานข้อมูลทำงานแล้ว แต่ยังไม่เคยได้ post ID จาก Facebook และยังไม่ได้กดภาพจากโพสต์จริงเพื่อยืนยันปลายทาง
+ตอนนี้ยังไม่มี Meta App ที่ตั้งค่าไว้ใน AFF และยังไม่มี Facebook Page ที่เชื่อมในระบบ: worker และฐานข้อมูลทำงานแล้ว แต่ยังไม่เคยได้ post ID จาก Facebook และยังไม่ได้กดภาพจากโพสต์จริงเพื่อยืนยันปลายทาง
 
 ## ข้อจำกัดการทดสอบและความเสี่ยง
 
