@@ -205,7 +205,7 @@
   $('fpSaveDraft').addEventListener('click',saveDraft);
   $('fpCreateCard').addEventListener('click',createCard);
   $('fpCopyCard').addEventListener('click',async()=>{
-    try{await root.navigator.clipboard.writeText($('fpCardLink').href);cardStatus('คัดลอกลิงก์การ์ดแล้ว · วางในโพสต์ของเพจ Facebook ได้เลย')}
+    try{await root.navigator.clipboard.writeText([$('fpCaption').value.trim(),$('fpCardLink').href].filter(Boolean).join('\n\n'));cardStatus('คัดลอกข้อความพร้อมลิงก์แล้ว · วางในโพสต์ Facebook ได้เลย')}
     catch{cardStatus('คัดลอกอัตโนมัติไม่ได้ กดลิงก์ค้างไว้เพื่อคัดลอก',true)}
   });
   $('fpConnect').addEventListener('click',connect);
