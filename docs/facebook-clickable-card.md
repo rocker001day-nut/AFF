@@ -1,41 +1,41 @@
-# โพสต์ภาพที่กดแล้วเปิดลิงก์ · AFF
+# AFF · โพสต์การ์ดภาพที่กดไปลิงก์บน Facebook
 
-## สิ่งที่ตรวจจาก Metus
+## การใช้งาน
 
-หน้าเครื่องมือ Metus ที่เปิดเผยได้มีสองแบบที่เกี่ยวข้อง:
+1. เปิดหน้า “โพสต์ภาพ + ลิงก์” และกด **เชื่อม Facebook และดึงเพจ** ระบบใช้ Facebook Login ของ Meta; หากเบราว์เซอร์ล็อกอิน Facebook อยู่แล้ว มักเหลือเพียงหน้ากดยืนยันสิทธิ์ครั้งแรก ไม่มีช่องกรอก Page token
+2. เลือกเพจที่ Facebook คืนมา ใส่ภาพ JPG/PNG/WebP ไม่เกิน 8 MB, ข้อความ และลิงก์ HTTPS
+3. ตั้งระยะห่าง 5–3,600 วินาทีระหว่างเพจ แล้วกด **โพสต์ตอนนี้** (เริ่มประมาณ 20 วินาทีหลังสั่ง) หรือ **ตั้งคิวตามเวลา** ระบบส่งทีละรายการขณะปิดหน้าเว็บได้
+4. ดูสถานะของแต่ละเพจ: รอส่ง, กำลังส่ง, โพสต์สำเร็จพร้อม post ID, ไม่สำเร็จ, หรือรอตรวจผลกรณี Facebook ตอบคลุมเครือ ไม่มีการ retry อัตโนมัติเมื่อผลคลุมเครือ
 
-- โพสต์ภาพปกติ: เลือกบัญชี/เพจ อัปภาพ และตั้งเวลา
-- การ์ดลิงก์: เลือกบัญชี/เพจ/บัญชี Ads กำหนด URL ปลายทางและ URL แสดงผล เลือกรูปแบบภาพ/อัลบั้ม แล้วโพสต์หรือตั้งเวลา
+## กลไก
 
-หน้า https://metus.vn/post-a-card ไม่เปิดเผยขั้นตอน API ภายใน จึงยังยืนยันไม่ได้ว่าเขาใช้คำขอ API ลำดับใด อย่าคัดลอกคุกกี้หรือเรียก private endpoints ของเว็บนั้น
+- Supabase Edge Function `facebook-publisher` รองรับ Facebook OAuth login/callback, ดึงเพจผ่าน `/me/accounts`, เก็บ Page access token แบบเข้ารหัสฝั่งเซิร์ฟเวอร์, อัปโหลดภาพ, สร้างคิว, ตอบ Open Graph HTML และเรียก Graph API `POST /{page-id}/feed` โดยใส่ `link` เป็น URL การ์ดของ AFF
+- การ์ดมี `og:image` จากภาพที่อัปโหลดและแสดงโดเมนปลายทางชัดเจน เมื่อมนุษย์เปิดการ์ดในเบราว์เซอร์ โค้ดหน้าเว็บจะเปลี่ยนไป URL ปลายทางทันที มีลิงก์สำรองให้กด
+- ฐานข้อมูลใช้ RLS และปิดการเข้าถึงตารางจาก `anon` / `authenticated`; worker มี secret ของตัวเองและ claim งานแบบ atomic. Cron ตรวจทุก 5 วินาที และเรียก Edge Function เฉพาะเมื่อมีรายการถึงเวลา
+- Facebook ควบคุมหน้าตาการ์ด ภาพครอป ข้อความปุ่ม และการเปิดลิงก์ในแอปเอง **ยังรับประกันรูปแบบเหมือนภาพตัวอย่างหรือปุ่ม “เรียนรู้เพิ่มเติม” ไม่ได้** ต้องโพสต์ทดสอบจริงและกดภาพบน Facebook เพื่อยืนยัน
+- ช่องว่างระหว่างเวลาในคิวตั้งได้เป็นวินาที การส่งจริงมีความคลาดเคลื่อนตามเวลาเรียก worker และเวลา Facebook ตอบ
 
-## ทางเลือก Meta ที่ต้องพิสูจน์กับบัญชีจริง
+## ตั้งค่าที่จำเป็นก่อนเชื่อมบัญชี
 
-1. Organic Page link post: POST /{page-id}/feed พร้อม link และ message ให้ภาพและข้อความของการ์ดมาจาก Open Graph ของ URL ที่แชร์ วิธีนี้คลิกภาพออก URL ได้ แต่การบังคับภาพที่อัปโหลดแยกจาก URL และปุ่ม Learn More แบบตัวอย่างยังยืนยันไม่ได้
-2. Marketing API creative: object_story_spec.link_data รองรับลิงก์ ภาพ และ call_to_action ร่วมกับ Page และบัญชีโฆษณา การสร้าง creative ทำให้เกิด unpublished Page post; **ไม่ถือว่าโพสต์เผยแพร่บนหน้าเพจแล้ว** ต้องทดสอบขั้นเผยแพร่จริงและตรวจ post ID
-3. โพสต์ภาพผ่าน /{page-id}/photos สร้างภาพบนเพจ แต่คลิกภาพโดยปกติเปิดหน้าภาพบน Facebook ไม่ตอบโจทย์ URL ปลายทาง
+ผู้ดูแล Meta App ต้องกำหนด Facebook Login redirect URI เป็น:
 
-ห้ามแสดงปุ่มโพสต์จริงว่าใช้งานได้จนกว่าจะได้ Page access token, สิทธิ์ pages_manage_posts/pages_show_list/pages_read_engagement, สิทธิ์บัญชี Ads เมื่อใช้ creative, และทดสอบกับเพจจริงที่ผู้ใช้มีสิทธิ์โดยยืนยันว่ากดภาพไปปลายทางได้ การแสดง FACEBOOK.COM เป็น URL แสดงผลทั้งที่ปลายทางอื่นไม่ใช่เงื่อนไขที่เราจะจำลอง
+`https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback`
 
-## ดีเลย์ระดับวินาที
+ตั้งค่า Supabase Edge Function secrets `META_APP_ID` และ `META_APP_SECRET` ของแอป Meta ที่มีสิทธิ์ `pages_show_list`, `pages_read_engagement`, `pages_manage_posts` และเพิ่มโดเมน AFF ใน Meta App Dashboard. **ห้ามส่ง App Secret หรือ Page token ในแชตหรือ commit ลง Git.** ผู้ที่ใช้แอปนอกบทบาท developer/tester อาจต้องขอ Advanced Access/App Review ตามการตั้งค่าของแอป.
 
-เก็บ batch และ job หนึ่งแถวต่อหนึ่ง Page โดยบันทึกเนื้อหา/ภาพ/URL เป็น snapshot เดียวกัน กำหนด scheduled_at = start + index × delay_seconds มี unique(batch_id,page_id) ป้องกันทำซ้ำ มีสถานะ draft, queued, processing, posted, failed, uncertain พร้อม post_id, permalink, error และเวลาที่ตรวจผลจริง
+ตอนนี้ยังไม่มี Meta App secrets ของ AFF ใน Supabase และยังไม่มี Facebook Page ที่เชื่อมในระบบ: worker และฐานข้อมูลทำงานแล้ว แต่ยังไม่เคยได้ post ID จาก Facebook และยังไม่ได้กดภาพจากโพสต์จริงเพื่อยืนยันปลายทาง
 
-หลังอนุมัติ batch ให้ background worker ทำงานตาม due time ขณะปิดเบราว์เซอร์ได้ Supabase pg_cron รองรับช่วงวินาทีใน Postgres รุ่นที่โปรเจกต์ใช้อยู่ แต่ต้องกำหนดความถี่ที่เหมาะสม ไม่ใช้ setTimeout ในแท็บเว็บ เมื่อตอบกลับคลุมเครือ ให้สถานะ uncertain และตรวจ Facebook ก่อน retry เพื่อไม่ให้เกิดโพสต์ซ้ำ
+## ข้อจำกัดการทดสอบและความเสี่ยง
 
-## สถานะของ branch นี้
+- Facebook อาจไม่สร้างการ์ดจาก HTML/OG ตามที่คาด หรือใช้ preview cache; ต้องใช้ Facebook Sharing Debugger ตรวจภาพและกดโพสต์จริงหนึ่งเพจ
+- Direct redirect ด้วย JavaScript อาจถูก Facebook บังคับหน้าเตือนลิงก์ หรือเปลี่ยนพฤติกรรมในแอป; เว็บจะบอกปลายทางตรงๆ และไม่ซ่อนโดเมนจริง
+- OAuth callback เก็บ state ใช้ครั้งเดียว 10 นาที การหมุน service role key จะทำให้ถอดรหัส Page token เดิมไม่ได้; ต้องเชื่อมบัญชีใหม่
+- โปรเจกต์นี้ยังไม่ได้เปิดปุ่มยืนยันรูปแบบโฆษณาแบบ unpublished creative; Marketing API ที่สร้าง creative ยังไม่ถือว่าเป็นโพสต์เพจที่เผยแพร่
 
-หน้าสร้างโพสต์มีตัวอย่างภาพที่กด URL ได้, โหลดเพจจาก /api/facebook หากมี, แสดงเวลาคิวต่อเพจ, ตรวจ URL HTTPS และบันทึกร่างในเครื่อง ปุ่มส่งจริงปิดไว้ตามสถานะเชื่อมต่อปัจจุบัน ภาพร่างอยู่เฉพาะในเบราว์เซอร์และต้องเลือกใหม่เมื่อกลับมา ยังไม่มีการเขียนข้อมูลเข้าฐานข้อมูลหรือ Facebook
+## เอกสาร
 
-AFF repo ปัจจุบันมี UI ที่เรียก /api/facebook แต่ไม่มี route นี้ใน source ที่อ่านได้; Supabase project มี platform_credentials 0 แถว และยังไม่มี Edge Function หรือ pg_cron worker จึงยังไม่สามารถอ้างว่าส่งโพสต์อัตโนมัติได้
-
-## เอกสารอ้างอิง
-
-- Metus tools: https://app.metus.vn/tools
-- Metus image posts: https://app.metus.vn/tools/posts-photos
-- Metus card/album: https://app.metus.vn/tools/posts-albums-fake
-- Meta Pages posts: https://developers.facebook.com/documentation/pages-api/posts
-- Meta Page feed: https://developers.facebook.com/docs/graph-api/reference/page/feed/
-- Meta Ad Creative Object Story Spec: https://developers.facebook.com/docs/marketing-api/reference/ad-creative-object-story-spec/
-- Meta Open Graph sharing: https://developers.facebook.com/documentation/sharing/webmasters/images
-- Supabase Cron: https://supabase.com/docs/guides/cron/quickstart
+- https://developers.facebook.com/documentation/pages-api
+- https://developers.facebook.com/documentation/pages-api/manage-pages
+- https://developers.facebook.com/docs/graph-api/reference/page/feed/
+- https://supabase.com/docs/guides/cron/quickstart
+- https://supabase.com/docs/guides/functions/auth
