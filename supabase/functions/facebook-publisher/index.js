@@ -5,6 +5,8 @@ const admin = createClient(BASE, SERVICE, {auth:{persistSession:false,autoRefres
 const BUCKET = 'aff-facebook-cards';
 const GRAPH = 'https://graph.facebook.com/v26.0';
 const UPLOAD_POST = 'https://api.upload-post.com';
+const CARD_ORIGIN = 'https://aff-lyart.vercel.app';
+const cardUrl = id => CARD_ORIGIN+'/card/'+id;
 const originAllowed = origin => !origin || origin === 'https://aff-lyart.vercel.app' || /^https:\/\/aff-[a-z0-9-]+\.vercel\.app$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin);
 function headers(req, type='application/json; charset=utf-8') {
   const origin=req.headers.get('origin')||'';
@@ -91,9 +93,11 @@ async function card(req,id){
   const title=batch.caption.trim().slice(0,100)||'ดูรายละเอียด';
   const html='<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<meta property="og:type" content="website"><meta property="og:title" content="'+escapeHtml(title)+'">'+
-    '<meta property="og:description" content="'+escapeHtml(destination)+'"><meta property="og:image" content="'+escapeHtml(image)+'">'+
-    '<meta property="og:url" content="'+escapeHtml(new URL(req.url).origin+new URL(req.url).pathname+'?action=card&id='+id)+'">'+
-    '<meta name="twitter:card" content="summary_large_image"><title>'+escapeHtml(title)+'</title></head>'+
+    '<meta property="og:description" content="กดภาพเพื่อดูรายละเอียดที่ '+escapeHtml(new URL(destination).hostname)+'"><meta property="og:site_name" content="AFF">'+
+    '<meta property="og:image" content="'+escapeHtml(image)+'"><meta property="og:image:secure_url" content="'+escapeHtml(image)+'">'+
+    '<meta property="og:image:alt" content="'+escapeHtml(title)+'"><meta property="og:url" content="'+cardUrl(id)+'">'+
+    '<meta name="twitter:card" content="summary_large_image"><meta name="twitter:image" content="'+escapeHtml(image)+'">'+
+    '<link rel="canonical" href="'+cardUrl(id)+'"><title>'+escapeHtml(title)+'</title></head>'+
     '<body style="font:16px system-ui;margin:3rem auto;max-width:35rem;padding:1rem"><img src="'+escapeHtml(image)+'" alt="" style="width:100%;height:auto"><p>กำลังเปิด '+escapeHtml(new URL(destination).hostname)+'…</p><p><a href="'+escapeHtml(destination)+'">เปิดลิงก์ปลายทาง</a></p>'+
     '<script>location.replace('+JSON.stringify(destination).replace(/</g,'\\u003c')+')</script></body></html>';
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'public,max-age=300'}});
@@ -178,7 +182,7 @@ async function worker(req){
       admin.from('facebook_publisher_batches').select('id,caption,destination,image_path').eq('id',job.batch_id).single()
     ]);
     check(pages.error);check(batches.error);
-    const cardUrl=BASE+'/functions/v1/facebook-publisher?action=card&id='+job.batch_id;
+    const linkCard=cardUrl(job.batch_id);
     let postId=null,permalink=null;
     if(pages.data.provider==='upload-post'){
       const key=await uploadPostConfig();
@@ -188,7 +192,7 @@ async function worker(req){
       form.set('platform[]','facebook');
       form.set('title',batches.data.caption||'ดูรายละเอียด');
       form.set('facebook_page_id',job.page_id);
-      form.set('facebook_link_url',cardUrl);
+      form.set('facebook_link_url',linkCard);
       form.set('request_id',job.id);
       form.set('external_id',job.id);
       const post=await uploadPost('/api/upload_text',key,{method:'POST',body:form,idempotencyKey:job.id});
@@ -203,7 +207,7 @@ async function worker(req){
       postId=String(facebook.id||facebook.post_id||post.request_id||'')||null;
     }else{
       const token=await decrypt(pages.data.access_token_enc);
-      const post=await graph(job.page_id+'/feed',token,{message:batches.data.caption,link:cardUrl,published:'true'});
+      const post=await graph(job.page_id+'/feed',token,{message:batches.data.caption,link:linkCard,published:'true'});
       if(!post.id)throw problem('Facebook ไม่ส่งรหัสโพสต์กลับมา',502);
       accepted=true;
       postId=post.id;
@@ -300,7 +304,7 @@ Deno.serve(async req=>{
       if(!imageResponse.ok)throw problem('ไม่พบภาพที่อัปโหลด');
       const batch=await admin.from('facebook_publisher_batches').insert({created_by:user.id,caption,destination,image_path:path,delay_seconds:30,status:'draft'}).select('id').single();
       check(batch.error);
-      return send(req,{ok:true,cardUrl:BASE+'/functions/v1/facebook-publisher?action=card&id='+batch.data.id},201);
+      return send(req,{ok:true,cardUrl:cardUrl(batch.data.id)},201);
     }
     if(action==='enqueue'&&req.method==='POST'){
       const b=await req.json(),dest=validDestination(b.destination),caption=String(b.caption||'').trim();
