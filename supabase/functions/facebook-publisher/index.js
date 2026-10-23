@@ -27,15 +27,22 @@ async function decrypt(value){
   const bytes=Uint8Array.from(atob(value),c=>c.charCodeAt(0));
   return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:bytes.slice(0,12)},key,bytes.slice(12)));
 }
+async function metaConfig(){
+  const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
+  if(appId&&appSecret)return {appId,appSecret};
+  const row=await admin.from('facebook_publisher_internal').select('meta_app_id,meta_app_secret_enc').eq('id',1).single();check(row.error);
+  if(!row.data.meta_app_id||!row.data.meta_app_secret_enc)return null;
+  return {appId:row.data.meta_app_id,appSecret:await decrypt(row.data.meta_app_secret_enc)};
+}
 async function member(req){
   const token=(req.headers.get('authorization')||'').match(/^Bearer\s+(.+)$/i)?.[1];
   if(!token)throw problem('กรุณาเข้าสู่ระบบ Google ก่อน',401);
   const {data:{user},error}=await admin.auth.getUser(token);
   if(error||!user)throw problem('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่',401);
-  const result=await admin.from('team_members').select('user_id').eq('user_id',user.id).eq('active',true).maybeSingle();
+  const result=await admin.from('team_members').select('user_id,role').eq('user_id',user.id).eq('active',true).maybeSingle();
   check(result.error);
   if(!result.data)throw problem('บัญชีนี้ไม่มีสิทธิ์ทีม AFF',403);
-  return user;
+  return {...user,teamRole:result.data.role};
 }
 async function graph(path,token,form){
   const endpoint=GRAPH+'/'+path.replace(/^\//,'');
@@ -68,8 +75,9 @@ async function callback(req){
   const record=await admin.from('facebook_publisher_oauth_states').delete().eq('state',state).gte('expires_at',new Date().toISOString()).select('user_id').maybeSingle();
   check(record.error);
   if(!record.data)throw problem('ลิงก์เชื่อมต่อหมดอายุ กรุณาลองใหม่',400);
-  const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
-  if(!appId||!appSecret)throw problem('ยังไม่ตั้งค่า Meta App',503);
+  const config=await metaConfig();
+  if(!config)throw problem('ยังไม่ตั้งค่า Meta App',503);
+  const {appId,appSecret}=config;
   const redirect=BASE+'/functions/v1/facebook-publisher?action=callback';
   const query=new URLSearchParams({client_id:appId,client_secret:appSecret,redirect_uri:redirect,code});
   const tokenResponse=await fetch(GRAPH+'/oauth/access_token?'+query);
@@ -134,11 +142,12 @@ Deno.serve(async req=>{
     if(action==='card'&&req.method==='GET')return await card(req,url.searchParams.get('id'));
     if(action==='callback'&&req.method==='GET')return await callback(req);
     if(action==='worker'&&req.method==='POST')return await worker(req);
-    if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(Deno.env.get('META_APP_ID')&&Deno.env.get('META_APP_SECRET'))});
+    if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(await metaConfig())});
     const user=await member(req);
     if(action==='login'&&req.method==='POST'){
-      const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
-      if(!appId||!appSecret)throw problem('ยังไม่ตั้งค่า META_APP_ID และ META_APP_SECRET ใน Supabase',503);
+      const config=await metaConfig();
+      if(!config)throw problem('ยังไม่ตั้งค่า Meta App ของเว็บ AFF',503);
+      const {appId}=config;
       const random=crypto.getRandomValues(new Uint8Array(36));
       const state=Array.from(random,b=>b.toString(16).padStart(2,'0')).join('');
       const added=await admin.from('facebook_publisher_oauth_states').insert({state,user_id:user.id});check(added.error);
@@ -146,9 +155,19 @@ Deno.serve(async req=>{
       const query=new URLSearchParams({client_id:appId,redirect_uri:redirect,state,response_type:'code',scope:'pages_show_list,pages_read_engagement,pages_manage_posts'});
       return send(req,{ok:true,url:'https://www.facebook.com/v26.0/dialog/oauth?'+query});
     }
+    if(action==='configure'&&req.method==='POST'){
+      if(user.teamRole!=='owner')throw problem('เฉพาะเจ้าของเว็บตั้งค่า Meta App ได้',403);
+      const body=await req.json(),appId=String(body.appId||'').trim(),appSecret=String(body.appSecret||'').trim();
+      if(!/^[0-9]{5,30}$/.test(appId)||appSecret.length<20||appSecret.length>256)throw problem('App ID หรือ App Secret ไม่ถูกต้อง');
+      const validation=await fetch(GRAPH+'/oauth/access_token?'+new URLSearchParams({client_id:appId,client_secret:appSecret,grant_type:'client_credentials'}));
+      const checked=await validation.json().catch(()=>({}));
+      if(!validation.ok||!checked.access_token)throw problem(checked.error?.message||'Meta ไม่ยืนยัน App ID/Secret',422);
+      const saved=await admin.from('facebook_publisher_internal').update({meta_app_id:appId,meta_app_secret_enc:await encrypt(appSecret)}).eq('id',1);check(saved.error);
+      return send(req,{ok:true,configured:true});
+    }
     if(action==='status'&&req.method==='GET'){
       const result=await admin.from('facebook_publisher_pages').select('id,name,connected_by,updated_at').order('name');check(result.error);
-      return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!(Deno.env.get('META_APP_ID')&&Deno.env.get('META_APP_SECRET')),pages:result.data});
+      return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!(await metaConfig()),canConfigure:user.teamRole==='owner',pages:result.data});
     }
     if(action==='image'&&req.method==='POST'){
       const type=(req.headers.get('content-type')||'').split(';')[0].trim();
