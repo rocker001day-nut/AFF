@@ -3847,7 +3847,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     <div class="app-page" id="facebookPublisherPage" hidden>
       <section class="panel fp-hero">
         <div><span class="fp-chip">FACEBOOK · AFF</span><h2>สร้างโพสต์ภาพแบบกดไปลิงก์</h2><p>ใส่ภาพ ข้อความ และ URL ปลายทาง เลือกเพจ แล้วดูเวลาโพสต์ของแต่ละเพจ</p></div>
-        <span class="fp-chip">ตัวอย่างร่าง · ยังไม่ส่ง Facebook</span>
+        <span class="fp-chip">โพสต์ผ่าน Facebook Login</span>
       </section>
       <div class="fp-workspace">
         <div class="fp-form">
@@ -3857,28 +3857,26 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
             <div class="fp-fields">
               <label class="fp-image-picker">เลือกรูป JPG / PNG / WebP
                 <input id="fpImage" type="file" accept="image/jpeg,image/png,image/webp">
-                <small id="fpImageName">ขนาดไม่เกิน 10 MB · ภาพยังอยู่ในเครื่องนี้</small>
+                <small id="fpImageName">ขนาดไม่เกิน 8 MB · อัปโหลดเมื่อกดส่ง</small>
               </label>
               <label>ข้อความโพสต์<textarea id="fpCaption" placeholder="เขียนแคปชั่นที่ต้องการให้แสดงเหนือภาพ"></textarea></label>
               <label>ลิงก์ปลายทางเมื่อกดภาพ<input id="fpDestination" type="url" inputmode="url" placeholder="https://..." autocomplete="url">
-                <small>ตัวอย่างบนหน้านี้กดภาพแล้วเปิดลิงก์ได้ ส่วน Facebook จริงต้องเชื่อมและทดสอบชนิดโพสต์ก่อน</small>
+                <small>ลิงก์นี้จะเปิดเมื่อคนกดการ์ดภาพบน Facebook</small>
               </label>
             </div>
           </section>
           <section class="fp-card">
             <h3>02 · เลือกเพจและเวลา</h3>
             <p>ระบบจะใช้โพสต์ชุดเดียวกันและเว้นเวลาตามลำดับเพจ</p>
-            <div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
+            <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
             <div class="fp-fields">
-              <label>ลองใส่ชื่อเพจเพื่อดูตัวอย่างคิว<textarea id="fpPreviewPages" placeholder="เพจ A, เพจ B, เพจ C"></textarea>
-                <small>ช่องนี้เป็นตัวอย่างเท่านั้น ไม่ใช่การเชื่อมเพจ</small>
-              </label>
+              
               <div class="fp-two">
                 <label>เริ่มโพสต์เวลา<input id="fpStart" type="datetime-local"></label>
                 <label>เว้นระยะต่อเพจ (วินาที)<input id="fpDelay" type="number" min="5" max="3600" step="1" value="30"></label>
               </div>
             </div>
-            <div class="fp-actions"><button class="btn" id="fpSaveDraft" type="button">บันทึกร่าง</button><button class="btn upload" type="button" disabled title="รอเชื่อม API และตรวจการโพสต์จริง">ส่งโพสต์จริง</button><small>จะเปิดส่งจริงหลังตรวจสิทธิ์ Meta และชนิดการ์ดคลิกออก</small></div>
+            <div class="fp-actions"><button class="btn" id="fpSaveDraft" type="button">บันทึกร่าง</button><button class="btn upload" id="fpPublishNow" type="button">โพสต์ตอนนี้</button><button class="btn" id="fpSchedule" type="button">ตั้งคิวตามเวลา</button><small>แต่ละเพจจะส่งตามดีเลย์ที่กำหนด และตรวจผล Facebook ในตารางด้านล่าง</small></div>
             <p class="fp-status" id="fpStatus" role="status" aria-live="polite">กำลังตรวจการเชื่อม Facebook</p>
           </section>
         </div>
@@ -3894,7 +3892,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
               </a>
             </div>
           </section>
-          <section class="fp-card"><div class="fp-queue-heading"><h3>03 · ตารางคิว</h3><small id="fpQueueCount">0 เพจ</small></div><p>แสดงเวลาไทยก่อนเริ่มส่งจริง</p><ol class="fp-queue" id="fpQueue"></ol></section>
+          <section class="fp-card"><div class="fp-queue-heading"><h3>03 · ตารางคิว</h3><small id="fpQueueCount">0 เพจ</small></div><p>ตรวจเวลาและเพจก่อนส่ง</p><ol class="fp-queue" id="fpQueue"></ol></section><section class="fp-card"><h3>ผลโพสต์จริง</h3><p>ดูรหัสโพสต์ที่ Facebook ตอบกลับ หรือสาเหตุที่ส่งไม่สำเร็จ</p><ol class="fp-queue" id="fpResults"></ol><button class="btn" id="fpRefreshResults" type="button">รีเฟรชผล</button></section>
         </div>
       </div>
     </div>
