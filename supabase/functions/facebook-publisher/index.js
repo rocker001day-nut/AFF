@@ -179,6 +179,18 @@ Deno.serve(async req=>{
       const upload=await admin.storage.from(BUCKET).upload(path,bytes,{contentType:type,upsert:false});check(upload.error);
       return send(req,{ok:true,path,publicUrl:admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl});
     }
+    if(action==='create-card'&&req.method==='POST'){
+      const b=await req.json(),destination=validDestination(b.destination),caption=String(b.caption||'').trim();
+      const path=String(b.imagePath||'');
+      if(!destination||caption.length>5000)throw problem('ตรวจลิงก์ปลายทางและข้อความก่อนสร้างการ์ด');
+      if(!path.startsWith(user.id+'/')||!/^[0-9a-f-]{36}\/[-0-9a-f]+\.(jpg|png|webp)$/i.test(path))throw problem('กรุณาอัปโหลดภาพใหม่');
+      const imageUrl=admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
+      const imageResponse=await fetch(imageUrl,{method:'HEAD'});
+      if(!imageResponse.ok)throw problem('ไม่พบภาพที่อัปโหลด');
+      const batch=await admin.from('facebook_publisher_batches').insert({created_by:user.id,caption,destination,image_path:path,delay_seconds:30,status:'draft'}).select('id').single();
+      check(batch.error);
+      return send(req,{ok:true,cardUrl:BASE+'/functions/v1/facebook-publisher?action=card&id='+batch.data.id},201);
+    }
     if(action==='enqueue'&&req.method==='POST'){
       const b=await req.json(),dest=validDestination(b.destination),caption=String(b.caption||'').trim();
       const delay=Number(b.delay),start=new Date(b.start),pageIds=[...new Set(Array.isArray(b.pages)?b.pages.map(String):[])];
