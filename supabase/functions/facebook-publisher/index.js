@@ -56,16 +56,49 @@ async function card(req,id){
   const html='<!doctype html><html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'+
     '<meta property="og:type" content="website"><meta property="og:title" content="'+escapeHtml(title)+'">'+
     '<meta property="og:description" content="'+escapeHtml(destination)+'"><meta property="og:image" content="'+escapeHtml(image)+'">'+
-    '<meta property="og:url" content="'+escapeHtml(new URL(req.url).origin+'/facebook-publisher?action=card&id='+id)+'">'+
+    '<meta property="og:url" content="'+escapeHtml(new URL(req.url).origin+new URL(req.url).pathname+'?action=card&id='+id)+'">'+
     '<meta name="twitter:card" content="summary_large_image"><title>'+escapeHtml(title)+'</title></head>'+
     '<body style="font:16px system-ui;margin:3rem auto;max-width:35rem;padding:1rem"><img src="'+escapeHtml(image)+'" alt="" style="width:100%;height:auto"><p>กำลังเปิด '+escapeHtml(new URL(destination).hostname)+'…</p><p><a href="'+escapeHtml(destination)+'">เปิดลิงก์ปลายทาง</a></p>'+
     '<script>location.replace('+JSON.stringify(destination).replace(/</g,'\\u003c')+')</script></body></html>';
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'public,max-age=300'}});
 }
+async function callback(req){
+  const url=new URL(req.url),state=url.searchParams.get('state')||'',code=url.searchParams.get('code')||'';
+  if(!/^[0-9a-f-]{72}$/.test(state)||!code)throw problem('Facebook Login ไม่สำเร็จ',400);
+  const record=await admin.from('facebook_publisher_oauth_states').delete().eq('state',state).gte('expires_at',new Date().toISOString()).select('user_id').maybeSingle();
+  check(record.error);
+  if(!record.data)throw problem('ลิงก์เชื่อมต่อหมดอายุ กรุณาลองใหม่',400);
+  const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
+  if(!appId||!appSecret)throw problem('ยังไม่ตั้งค่า Meta App',503);
+  const redirect=BASE+'/functions/v1/facebook-publisher?action=callback';
+  const query=new URLSearchParams({client_id:appId,client_secret:appSecret,redirect_uri:redirect,code});
+  const tokenResponse=await fetch(GRAPH+'/oauth/access_token?'+query);
+  const short=await tokenResponse.json();
+  if(!tokenResponse.ok||!short.access_token)throw problem(short.error?.message||'แลก Facebook token ไม่สำเร็จ',422);
+  const longQuery=new URLSearchParams({grant_type:'fb_exchange_token',client_id:appId,client_secret:appSecret,fb_exchange_token:short.access_token});
+  const longResponse=await fetch(GRAPH+'/oauth/access_token?'+longQuery);
+  const long=await longResponse.json();
+  const userToken=longResponse.ok&&long.access_token?long.access_token:short.access_token;
+  let next=GRAPH+'/me/accounts?fields=id,name,access_token,tasks&limit=100',pages=[],count=0;
+  while(next&&count++<5){
+    const response=await fetch(next,{headers:{Authorization:'Bearer '+userToken}});
+    const data=await response.json();
+    if(!response.ok)throw problem(data.error?.message||'ดึงเพจไม่สำเร็จ',422);
+    pages.push(...(data.data||[]));
+    next=data.paging?.next||'';
+  }
+  for(const page of pages){
+    if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.access_token)continue;
+    const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',page.id).maybeSingle();check(existing.error);
+    if(existing.data&&existing.data.connected_by!==record.data.user_id)continue;
+    const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
+  }
+  return new Response(null,{status:302,headers:{Location:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher','Cache-Control':'no-store'}});
+}
 async function worker(req){
   const result=await admin.from('facebook_publisher_internal').select('worker_token').eq('id',1).single();check(result.error);
   const provided=req.headers.get('x-aff-worker-token')||'', expected=result.data.worker_token;
-  if(provided.length!==expected.length||![...provided].reduce((diff,c,i)=>diff|(c.charCodeAt(0)^expected.charCodeAt(i)),0)===0)throw problem('Forbidden',403);
+  if(provided.length!==expected.length||[...provided].reduce((diff,c,i)=>diff|(c.charCodeAt(0)^expected.charCodeAt(i)),0)!==0)throw problem('Forbidden',403);
   const claimed=await admin.rpc('facebook_claim_due_job');check(claimed.error);
   const job=claimed.data?.[0];if(!job)return send(req,{ok:true,processed:0});
   let accepted=false;
@@ -97,11 +130,22 @@ Deno.serve(async req=>{
     if(req.method==='OPTIONS')return new Response(null,{status:204,headers:headers(req)});
     if(!originAllowed(req.headers.get('origin')))throw problem('Origin not allowed',403);
     if(action==='card'&&req.method==='GET')return card(req,url.searchParams.get('id'));
+    if(action==='callback'&&req.method==='GET')return callback(req);
     if(action==='worker'&&req.method==='POST')return worker(req);
     const user=await member(req);
+    if(action==='login'&&req.method==='POST'){
+      const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
+      if(!appId||!appSecret)throw problem('ยังไม่ตั้งค่า META_APP_ID และ META_APP_SECRET ใน Supabase',503);
+      const random=crypto.getRandomValues(new Uint8Array(36));
+      const state=Array.from(random,b=>b.toString(16).padStart(2,'0')).join('');
+      const added=await admin.from('facebook_publisher_oauth_states').insert({state,user_id:user.id});check(added.error);
+      const redirect=BASE+'/functions/v1/facebook-publisher?action=callback';
+      const query=new URLSearchParams({client_id:appId,redirect_uri:redirect,state,response_type:'code',scope:'pages_show_list,pages_read_engagement,pages_manage_posts'});
+      return send(req,{ok:true,url:'https://www.facebook.com/v26.0/dialog/oauth?'+query});
+    }
     if(action==='status'&&req.method==='GET'){
       const result=await admin.from('facebook_publisher_pages').select('id,name,connected_by,updated_at').order('name');check(result.error);
-      return send(req,{ok:true,connected:!!result.data.length,pages:result.data});
+      return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!(Deno.env.get('META_APP_ID')&&Deno.env.get('META_APP_SECRET')),pages:result.data});
     }
     if(action==='connect'&&req.method==='POST'){
       const body=await req.json(),token=String(body.token||'').trim();
