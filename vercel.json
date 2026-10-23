@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/card/:id",
+      "destination": "https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=card&id=:id"
+    }
+  ]
+}
