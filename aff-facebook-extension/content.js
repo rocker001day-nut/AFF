@@ -1,0 +1,21 @@
+(() => {
+  const origin = 'https://aff-lyart.vercel.app';
+  if (window.top !== window || location.origin !== origin) return;
+
+  async function report() {
+    let loggedIn = false;
+    try {
+      const reply = await chrome.runtime.sendMessage({ type: 'AFF_CHECK_FACEBOOK' });
+      loggedIn = reply?.loggedIn === true;
+    } catch {
+      // The extension may have been reloaded while this tab was open.
+    }
+    window.postMessage({ source: 'aff-facebook-extension', type: 'FACEBOOK_STATUS', loggedIn }, origin);
+  }
+
+  window.addEventListener('message', event => {
+    if (event.source === window && event.origin === origin &&
+        event.data?.source === 'aff-publisher' && event.data?.type === 'CHECK_FACEBOOK') report();
+  });
+  report();
+})();
