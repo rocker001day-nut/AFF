@@ -71,3 +71,8 @@
 @media(max-width:640px){.fp-maker-action .btn,.fp-ready-actions .btn{width:100%;justify-content:center}}
 
 .fp-card-maker .fp-status:empty{display:none}
+
+.fp-browser-note{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0;padding:10px 12px;border-radius:10px;background:var(--panel);font-size:13px}
+.fp-browser-note a{color:var(--accent-2);text-decoration:underline}
+.fp-browser-status[data-state="on"]{color:#12804d;font-weight:700}
+.fp-browser-status[data-state="off"]{color:var(--muted)}
