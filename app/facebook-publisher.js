@@ -132,7 +132,8 @@
       status('กำลังอัปโหลดภาพ…');
       const image=await api('image','POST',file,file.type);
       status('กำลังสร้างคิวโพสต์…');
-      const result=await api('enqueue','POST',{imagePath:image.path,caption:$('fpCaption').value,destination:destination.href,pages,delay,start:start.toISOString()});
+      const startAt=now?new Date(Date.now()+20000):start;
+      const result=await api('enqueue','POST',{imagePath:image.path,caption:$('fpCaption').value,destination:destination.href,pages,delay,start:startAt.toISOString()});
       status('เข้าคิว '+result.jobs.length+' เพจแล้ว · รอ Facebook ตอบรับและรีเฟรชผล');
       await loadJobs();
     }catch(error){status(error.message,true)}
