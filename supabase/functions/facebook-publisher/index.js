@@ -4,6 +4,7 @@ const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const admin = createClient(BASE, SERVICE, {auth:{persistSession:false,autoRefreshToken:false}});
 const BUCKET = 'aff-facebook-cards';
 const GRAPH = 'https://graph.facebook.com/v26.0';
+const UPLOAD_POST = 'https://api.upload-post.com';
 const originAllowed = origin => !origin || origin === 'https://aff-lyart.vercel.app' || /^https:\/\/aff-[a-z0-9-]+\.vercel\.app$/.test(origin) || /^http:\/\/localhost:\d+$/.test(origin);
 function headers(req, type='application/json; charset=utf-8') {
   const origin=req.headers.get('origin')||'';
@@ -33,6 +34,31 @@ async function metaConfig(){
   const row=await admin.from('facebook_publisher_internal').select('meta_app_id,meta_app_secret_enc').eq('id',1).single();check(row.error);
   if(!row.data.meta_app_id||!row.data.meta_app_secret_enc)return null;
   return {appId:row.data.meta_app_id,appSecret:await decrypt(row.data.meta_app_secret_enc)};
+}
+async function uploadPostConfig(){
+  const row=await admin.from('facebook_publisher_internal').select('upload_post_api_key_enc').eq('id',1).single();check(row.error);
+  return row.data.upload_post_api_key_enc?await decrypt(row.data.upload_post_api_key_enc):null;
+}
+function uploadPostProfile(userId){return 'aff_'+userId.replace(/-/g,'')}
+async function uploadPost(path,key,options={}){
+  const response=await fetch(UPLOAD_POST+path,{method:options.method||'GET',headers:{Authorization:'Apikey '+key,...(options.json?{'Content-Type':'application/json'}:{}),...(options.idempotencyKey?{'Idempotency-Key':options.idempotencyKey}:{})},body:options.json?JSON.stringify(options.json):options.body,signal:AbortSignal.timeout(25000)});
+  const result=await response.json().catch(()=>({}));
+  if(!response.ok||result.success===false){
+    const reason=typeof result.error==='string'?result.error:typeof result.message==='string'?result.message:'Upload-Post ไม่ตอบรับ';
+    throw Object.assign(problem(reason.slice(0,400),response.status>=500?502:422),{upstreamStatus:response.status});
+  }
+  return result;
+}
+async function syncUploadPostPages(user,key){
+  const profile=uploadPostProfile(user.id),incoming=await uploadPost('/api/uploadposts/facebook/pages?profile='+encodeURIComponent(profile),key);
+  const pages=Array.isArray(incoming.pages)?incoming.pages:[];
+  for(const page of pages){
+    const id=String(page.page_id||page.id||''),name=String(page.page_name||page.name||id);
+    if(!/^[0-9]{5,30}$/.test(id)||page.profile&&page.profile!==profile)continue;
+    const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',id).maybeSingle();check(existing.error);
+    if(existing.data&&existing.data.connected_by!==user.id)continue;
+    const saved=await admin.from('facebook_publisher_pages').upsert({id,name,connected_by:user.id,access_token_enc:'',provider:'upload-post',profile_username:profile,updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
+  }
 }
 async function member(req){
   const token=(req.headers.get('authorization')||'').match(/^Bearer\s+(.+)$/i)?.[1];
@@ -99,7 +125,7 @@ async function callback(req){
     if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.access_token)continue;
     const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',page.id).maybeSingle();check(existing.error);
     if(existing.data&&existing.data.connected_by!==record.data.user_id)continue;
-    const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
+    const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),provider:'meta',profile_username:null,updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
   }
   return new Response(null,{status:302,headers:{Location:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher','Cache-Control':'no-store'}});
 }
@@ -112,20 +138,42 @@ async function worker(req){
   let accepted=false;
   try {
     const [pages,batches]=await Promise.all([
-      admin.from('facebook_publisher_pages').select('access_token_enc').eq('id',job.page_id).single(),
+      admin.from('facebook_publisher_pages').select('access_token_enc,provider,profile_username').eq('id',job.page_id).single(),
       admin.from('facebook_publisher_batches').select('id,caption,destination,image_path').eq('id',job.batch_id).single()
     ]);
     check(pages.error);check(batches.error);
-    const token=await decrypt(pages.data.access_token_enc);
     const cardUrl=BASE+'/functions/v1/facebook-publisher?action=card&id='+job.batch_id;
-    const post=await graph(job.page_id+'/feed',token,{message:batches.data.caption,link:cardUrl,published:'true'});
-    if(!post.id)throw problem('Facebook ไม่ส่งรหัสโพสต์กลับมา',502);
-    accepted=true;
-    let permalink=null;
-    try { permalink=(await graph(encodeURIComponent(post.id)+'?fields=permalink_url',token)).permalink_url||null; } catch {}
-    const update=await admin.from('facebook_publisher_jobs').update({status:'posted',facebook_post_id:post.id,permalink,finished_at:new Date().toISOString(),error:null}).eq('id',job.id).eq('status','processing');
+    let postId=null,permalink=null;
+    if(pages.data.provider==='upload-post'){
+      const key=await uploadPostConfig();
+      if(!key||!pages.data.profile_username)throw problem('ยังไม่ได้เชื่อมบริการโพสต์ของเพจนี้',422);
+      const form=new FormData();
+      form.set('user',pages.data.profile_username);
+      form.set('platform[]','facebook');
+      form.set('title',batches.data.caption||'ดูรายละเอียด');
+      form.set('facebook_page_id',job.page_id);
+      form.set('facebook_link_url',cardUrl);
+      const post=await uploadPost('/api/upload_text',key,{method:'POST',body:form,idempotencyKey:job.id});
+      const facebook=post.results?.facebook;
+      if(facebook?.success===false||facebook?.skipped)throw problem(facebook.error||'Facebook ไม่รับโพสต์',422);
+      if(!facebook?.success){
+        accepted=!!(post.request_id||post.job_id);
+        throw problem(accepted?'ผู้ให้บริการกำลังตรวจโพสต์ เลขงาน '+(post.request_id||post.job_id):'ยังไม่ได้รับผลโพสต์จาก Facebook',accepted?502:422);
+      }
+      accepted=true;
+      permalink=facebook.url||facebook.permalink||null;
+      postId=String(facebook.id||facebook.post_id||post.request_id||'')||null;
+    }else{
+      const token=await decrypt(pages.data.access_token_enc);
+      const post=await graph(job.page_id+'/feed',token,{message:batches.data.caption,link:cardUrl,published:'true'});
+      if(!post.id)throw problem('Facebook ไม่ส่งรหัสโพสต์กลับมา',502);
+      accepted=true;
+      postId=post.id;
+      try { permalink=(await graph(encodeURIComponent(post.id)+'?fields=permalink_url',token)).permalink_url||null; } catch {}
+    }
+    const update=await admin.from('facebook_publisher_jobs').update({status:'posted',facebook_post_id:postId,permalink,finished_at:new Date().toISOString(),error:null}).eq('id',job.id).eq('status','processing');
     check(update.error);
-    return send(req,{ok:true,processed:1,postId:post.id});
+    return send(req,{ok:true,processed:1,postId});
   } catch(error){
     const status=accepted||error.status!==422?'uncertain':'failed';
     const update=await admin.from('facebook_publisher_jobs').update({status,error:String(error.message).slice(0,500),finished_at:new Date().toISOString()}).eq('id',job.id).eq('status','processing');
@@ -142,9 +190,19 @@ Deno.serve(async req=>{
     if(action==='card'&&req.method==='GET')return await card(req,url.searchParams.get('id'));
     if(action==='callback'&&req.method==='GET')return await callback(req);
     if(action==='worker'&&req.method==='POST')return await worker(req);
-    if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(await metaConfig())});
+    if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(await metaConfig())||!!(await uploadPostConfig())});
     const user=await member(req);
     if(action==='login'&&req.method==='POST'){
+      const uploadKey=await uploadPostConfig();
+      if(uploadKey){
+        const profile=uploadPostProfile(user.id);
+        try{await uploadPost('/api/uploadposts/users',uploadKey,{method:'POST',json:{username:profile,display_name:'AFF Facebook '+user.id.slice(0,8)}})}
+        catch(error){if(error.upstreamStatus!==409)throw error}
+        const linked=await uploadPost('/api/uploadposts/users/generate-jwt',uploadKey,{method:'POST',json:{username:profile,platforms:['facebook'],show_calendar:false,connect_title:'เชื่อมเพจ Facebook กับ AFF',redirect_url:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher'}});
+        const url=new URL(linked.access_url||'');
+        if(url.protocol!=='https:'||url.hostname!=='app.upload-post.com')throw problem('ลิงก์เชื่อม Facebook ไม่ถูกต้อง',502);
+        return send(req,{ok:true,url:url.href,provider:'upload-post'});
+      }
       const config=await metaConfig();
       if(!config)throw problem('ยังไม่ตั้งค่า Meta App ของเว็บ AFF',503);
       const {appId}=config;
@@ -154,6 +212,14 @@ Deno.serve(async req=>{
       const redirect=BASE+'/functions/v1/facebook-publisher?action=callback';
       const query=new URLSearchParams({client_id:appId,redirect_uri:redirect,state,response_type:'code',scope:'pages_show_list,pages_read_engagement,pages_manage_posts'});
       return send(req,{ok:true,url:'https://www.facebook.com/v26.0/dialog/oauth?'+query});
+    }
+    if(action==='configure-upload-post'&&req.method==='POST'){
+      if(user.teamRole!=='owner')throw problem('เฉพาะเจ้าของเว็บตั้งค่าผู้ให้บริการได้',403);
+      const body=await req.json(),key=String(body.apiKey||'').trim();
+      if(!/^[^\s]{12,512}$/.test(key))throw problem('ตรวจ API key ของ Upload-Post');
+      await uploadPost('/api/uploadposts/users',key);
+      const saved=await admin.from('facebook_publisher_internal').update({upload_post_api_key_enc:await encrypt(key)}).eq('id',1);check(saved.error);
+      return send(req,{ok:true,configured:true});
     }
     if(action==='configure'&&req.method==='POST'){
       if(user.teamRole!=='owner')throw problem('เฉพาะเจ้าของเว็บตั้งค่า Meta App ได้',403);
@@ -166,8 +232,14 @@ Deno.serve(async req=>{
       return send(req,{ok:true,configured:true});
     }
     if(action==='status'&&req.method==='GET'){
-      const result=await admin.from('facebook_publisher_pages').select('id,name,connected_by,updated_at').order('name');check(result.error);
-      return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!(await metaConfig()),canConfigure:user.teamRole==='owner',pages:result.data});
+      const uploadKey=await uploadPostConfig(),provider=uploadKey?'upload-post':'meta';
+      let syncError=null;
+      if(uploadKey){
+        try{await syncUploadPostPages(user,uploadKey)}
+        catch(error){if(error.upstreamStatus!==404){console.error('Failed to refresh Upload-Post pages',error);syncError='ดึงรายชื่อเพจล่าสุดไม่ได้ กดรีเฟรชอีกครั้ง'}}
+      }
+      const result=await admin.from('facebook_publisher_pages').select('id,name,updated_at').eq('connected_by',user.id).eq('provider',provider).order('name');check(result.error);
+      return send(req,{ok:true,connected:!!result.data.length,oauthReady:!!uploadKey||!!(await metaConfig()),provider,canConfigure:user.teamRole==='owner',pages:result.data,syncError});
     }
     if(action==='image'&&req.method==='POST'){
       const type=(req.headers.get('content-type')||'').split(';')[0].trim();
@@ -201,7 +273,8 @@ Deno.serve(async req=>{
       const imageUrl=admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
       const checkImage=await fetch(imageUrl,{method:'HEAD'});
       if(!checkImage.ok)throw problem('ไม่พบภาพที่อัปโหลด');
-      const selected=await admin.from('facebook_publisher_pages').select('id').in('id',pageIds);check(selected.error);
+      const provider=(await uploadPostConfig())?'upload-post':'meta';
+      const selected=await admin.from('facebook_publisher_pages').select('id').in('id',pageIds).eq('connected_by',user.id).eq('provider',provider);check(selected.error);
       if(selected.data.length!==pageIds.length)throw problem('มีเพจที่ยังไม่ได้เชื่อม');
       const batch=await admin.from('facebook_publisher_batches').insert({created_by:user.id,caption,destination:dest,image_path:path,delay_seconds:delay,status:'draft'}).select('id').single();check(batch.error);
       const jobs=pageIds.map((page_id,index)=>({batch_id:batch.data.id,page_id,scheduled_at:new Date(start.getTime()+index*delay*1000).toISOString()}));
