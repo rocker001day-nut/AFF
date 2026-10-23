@@ -113,11 +113,13 @@ async function worker(req){
     const post=await graph(job.page_id+'/feed',token,{message:batches.data.caption,link:cardUrl,published:'true'});
     if(!post.id)throw problem('Facebook ไม่ส่งรหัสโพสต์กลับมา',502);
     accepted=true;
-    const update=await admin.from('facebook_publisher_jobs').update({status:'posted',facebook_post_id:post.id,finished_at:new Date().toISOString(),error:null}).eq('id',job.id).eq('status','processing');
+    let permalink=null;
+    try { permalink=(await graph(encodeURIComponent(post.id)+'?fields=permalink_url',token)).permalink_url||null; } catch {}
+    const update=await admin.from('facebook_publisher_jobs').update({status:'posted',facebook_post_id:post.id,permalink,finished_at:new Date().toISOString(),error:null}).eq('id',job.id).eq('status','processing');
     check(update.error);
     return send(req,{ok:true,processed:1,postId:post.id});
   } catch(error){
-    const status=accepted||error.status===502?'uncertain':'failed';
+    const status=accepted||error.status!==422?'uncertain':'failed';
     const update=await admin.from('facebook_publisher_jobs').update({status,error:String(error.message).slice(0,500),finished_at:new Date().toISOString()}).eq('id',job.id).eq('status','processing');
     if(update.error)console.error('Failed to persist job failure',update.error.message);
     return send(req,{ok:false,processed:1,status,error:String(error.message)},200);
