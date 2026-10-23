@@ -3874,7 +3874,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <section class="fp-card">
             <h3>02 · เลือกเพจและเวลา</h3>
             <p>ระบบจะใช้โพสต์ชุดเดียวกันและเว้นเวลาตามลำดับเพจ</p>
-            <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><details id="fpAppSetup" class="fp-setup" hidden><summary>ตั้งค่าแอป Facebook สำหรับเว็บนี้ครั้งแรก</summary><p>เจ้าของเว็บสร้างแอปที่ <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta for Developers</a> แล้วนำ App ID กับ App Secret มาตั้งค่าครั้งเดียว ช่องนี้ไม่ใช่ Page token</p><p>ตั้งค่า Valid OAuth Redirect URI เป็น <code>https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback</code> และขอสิทธิ์ pages_show_list, pages_read_engagement, pages_manage_posts</p><div class="fp-fields"><label>Meta App ID<input id="fpAppId" inputmode="numeric" autocomplete="off"></label><label>Meta App Secret<input id="fpAppSecret" type="password" autocomplete="new-password"></label><button class="btn" id="fpSaveApp" type="button">บันทึกการตั้งค่าแอป</button></div></details><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
+            <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><small id="fpConnectionMode">กำลังตรวจวิธีเชื่อมต่อ…</small><details id="fpProviderSetup" class="fp-setup" hidden><summary>ตั้งค่าเชื่อมเพจแบบไม่ต้องสร้าง Meta App</summary><p>เจ้าของเว็บสมัคร <a href="https://app.upload-post.com/" target="_blank" rel="noopener noreferrer">Upload-Post</a> แล้วนำ API key ของบริการมาตั้งค่าครั้งเดียว จากนั้นสมาชิก AFF กดปุ่มเชื่อม Facebook และเลือกเพจได้โดยไม่กรอก Page token · บริการมีโควตาและแผนตามบัญชีที่สมัคร</p><div class="fp-fields"><label>Upload-Post API key<input id="fpProviderKey" type="password" autocomplete="new-password" spellcheck="false"></label><button class="btn" id="fpSaveProvider" type="button">บันทึกและตรวจการเชื่อมต่อ</button></div></details><details id="fpAppSetup" class="fp-setup" hidden><summary>ทางเลือก: ใช้ Meta App ของ AFF เอง</summary><p>เจ้าของเว็บสร้างแอปที่ <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta for Developers</a> แล้วนำ App ID กับ App Secret มาตั้งค่าครั้งเดียว ช่องนี้ไม่ใช่ Page token</p><p>ตั้งค่า Valid OAuth Redirect URI เป็น <code>https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback</code> และขอสิทธิ์ pages_show_list, pages_read_engagement, pages_manage_posts</p><div class="fp-fields"><label>Meta App ID<input id="fpAppId" inputmode="numeric" autocomplete="off"></label><label>Meta App Secret<input id="fpAppSecret" type="password" autocomplete="new-password"></label><button class="btn" id="fpSaveApp" type="button">บันทึกการตั้งค่าแอป</button></div></details><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
             <div class="fp-fields">
               
               <div class="fp-two">
@@ -8203,7 +8203,7 @@ function exportExcel() {
   <script src="app/multi-account.js" defer></script>
   <script src="app/connector-client.js" defer></script>
   <script src="app/edit-post.js" defer></script>
-  <script src="app/facebook-publisher.js?v=20261023-card" defer></script>
+  <script src="app/facebook-publisher.js?v=20261023-provider" defer></script>
 <script data-aff-facebook>
 (function () {
   'use strict';
