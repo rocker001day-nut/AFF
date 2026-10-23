@@ -134,6 +134,7 @@ Deno.serve(async req=>{
     if(action==='card'&&req.method==='GET')return await card(req,url.searchParams.get('id'));
     if(action==='callback'&&req.method==='GET')return await callback(req);
     if(action==='worker'&&req.method==='POST')return await worker(req);
+    if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(Deno.env.get('META_APP_ID')&&Deno.env.get('META_APP_SECRET'))});
     const user=await member(req);
     if(action==='login'&&req.method==='POST'){
       const appId=Deno.env.get('META_APP_ID'),appSecret=Deno.env.get('META_APP_SECRET');
