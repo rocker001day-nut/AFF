@@ -16,6 +16,17 @@
   if(!$('facebookPublisherPage'))return;
   function status(message,error=false){$('fpStatus').textContent=message;$('fpStatus').dataset.error=String(error)}
   function cardStatus(message,error=false){$('fpCardStatus').textContent=message;$('fpCardStatus').dataset.error=String(error)}
+  function requestBrowserStatus(){
+    root.postMessage({source:'aff-publisher',type:'CHECK_FACEBOOK'},root.location.origin);
+  }
+  root.addEventListener('message',event=>{
+    const data=event.data;
+    if(event.source!==root||event.origin!==root.location.origin||data?.source!=='aff-facebook-extension'||data.type!=='FACEBOOK_STATUS')return;
+    const banner=$('fpBrowserStatus');
+    if(!banner)return;
+    banner.dataset.state=data.loggedIn?'on':'off';
+    banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · กดเชื่อมเพจเพื่ออนุญาตการโพสต์':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
+  });
   function selectedPages(){return [...$('fpPages').querySelectorAll('input:checked')].map(el=>el.value)}
   async function api(action,method='GET',body,contentType){
     const client=root.__affSupabaseClient||root.supabaseClient;
@@ -216,7 +227,8 @@
   $('fpRefreshResults').addEventListener('click',loadJobs);
   if(!$('fpStart').value){const soon=new Date(Date.now()+120000),local=new Date(soon.getTime()-soon.getTimezoneOffset()*60000);$('fpStart').value=local.toISOString().slice(0,16)}
   render();
-  root.document.addEventListener('aff:publisher:open',()=>{loadPages();loadJobs()});
+  requestBrowserStatus();
+  root.document.addEventListener('aff:publisher:open',()=>{loadPages();loadJobs();requestBrowserStatus()});
   if(root.location.hash==='#publisher')root.document.querySelector('[data-page-target="publisher"]')?.click();
   if(!$('facebookPublisherPage').hidden){loadPages();loadJobs()}
   root.setInterval(()=>{if(!$('facebookPublisherPage').hidden&&connectedPages.length)loadJobs()},10000);
