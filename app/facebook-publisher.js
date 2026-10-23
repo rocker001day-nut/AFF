@@ -78,8 +78,9 @@
       const data=await api('status');
       connectedPages=data.pages||[];
       $('fpProviderSetup').hidden=!data.canConfigure||data.oauthReady;
+      $('fpProviderSetup').open=!!data.canConfigure&&!data.oauthReady;
       $('fpAppSetup').hidden=!data.canConfigure||data.oauthReady;
-      $('fpConnectionMode').textContent=data.provider==='upload-post'?'เชื่อมผ่าน Upload-Post · เลือกเพจใน Facebook ได้':'เชื่อมผ่าน Meta App ของ AFF';
+      $('fpConnectionMode').textContent=!data.oauthReady?'ยังไม่เปิดการเชื่อม · เจ้าของเว็บตั้งค่าหนึ่งครั้งด้านล่าง':data.provider==='upload-post'?'เชื่อมผ่าน Upload-Post · เลือกเพจใน Facebook ได้':'เชื่อมผ่าน Meta App ของ AFF';
       $('fpConnect').disabled=!data.oauthReady;
       $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'เจ้าของเว็บตั้งค่าการเชื่อม Facebook หนึ่งครั้งก่อน';
       $('fpPages').replaceChildren();
@@ -93,7 +94,7 @@
       if(!connectedPages.length)$('fpPages').textContent='ยังไม่พบเพจ กด “เชื่อม Facebook และดึงเพจ”';
       status(data.syncError||(
         connectedPages.length?'เลือกเพจที่ต้องการโพสต์ ('+connectedPages.length+' เพจ)':
-        data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':'เจ้าของเว็บต้องตั้งค่าการเชื่อมเพจด้านล่างหนึ่งครั้ง'),!!data.syncError||!connectedPages.length);
+        data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':data.canConfigure?'ขั้นตอนแรก: ตั้งค่าระบบเชื่อมเพจในช่องที่เปิดอยู่ด้านล่าง':'ยังเชื่อม Facebook ไม่ได้ · แจ้งเจ้าของเว็บเปิดการเชื่อมเพจก่อน'),!!data.syncError||!connectedPages.length);
     }catch(error){$('fpPages').textContent='ยังโหลดเพจไม่ได้';status(error.message,true)}
     render();
   }
