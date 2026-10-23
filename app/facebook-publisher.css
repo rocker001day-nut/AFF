@@ -46,3 +46,11 @@
 .fp-queue-heading small { color:var(--muted); }
 @media(max-width:900px) { .fp-workspace { grid-template-columns:1fr; } .fp-side { grid-template-columns:minmax(0,1fr) minmax(0,1fr); } }
 @media(max-width:640px) { .fp-hero { align-items:flex-start; flex-direction:column; } .fp-card { padding:16px; } .fp-side,.fp-two { grid-template-columns:1fr; } .fp-queue li { grid-template-columns:25px minmax(0,1fr); } .fp-queue time { grid-column:2; } }
+
+.fp-setup{margin:12px 0 18px;border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--panel)}
+.fp-setup[hidden]{display:none}
+.fp-setup summary{cursor:pointer;font-weight:750}
+.fp-setup p{font-size:13px;line-height:1.6;color:var(--muted)}
+.fp-setup code{display:inline-block;max-width:100%;overflow-wrap:anywhere;white-space:normal;padding:4px;background:var(--bg);color:var(--ink);border-radius:6px}
+.fp-setup a{color:var(--accent-2)}
+.fp-results a{font-size:13px}
