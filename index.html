@@ -3866,6 +3866,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
             </div>
           </section>
           <section class="fp-card">
+            <h3>ทดสอบภาพที่กดไปลิงก์</h3>
+            <p>สร้างลิงก์จากภาพด้านบน แล้วคัดลอกไปวางในโพสต์ของเพจ Facebook ที่ล็อกอินอยู่ได้ทันที Facebook จะโหลดภาพเป็นตัวอย่างลิงก์ให้ตรวจสอบก่อนกดโพสต์</p>
+            <button class="btn upload" id="fpCreateCard" type="button">สร้างลิงก์การ์ดจากภาพ</button>
+            <div id="fpCardReady" class="fp-card-ready" hidden><p>คัดลอกลิงก์นี้ไปวางในช่องสร้างโพสต์ของเพจ:</p><a id="fpCardLink" href="#" target="_blank" rel="noopener noreferrer"></a><button class="btn" id="fpCopyCard" type="button">คัดลอกลิงก์</button><small>นี่คือโพสต์แบบลิงก์พรีวิว: ภาพกดไปเว็บไซต์ปลายทางได้ หน้าตาภาพและปุ่มขึ้นอยู่กับ Facebook</small></div>
+          </section>
+          <section class="fp-card">
             <h3>02 · เลือกเพจและเวลา</h3>
             <p>ระบบจะใช้โพสต์ชุดเดียวกันและเว้นเวลาตามลำดับเพจ</p>
             <button class="btn" id="fpConnect" type="button">เชื่อม Facebook และดึงเพจ</button><details id="fpAppSetup" class="fp-setup" hidden><summary>ตั้งค่าแอป Facebook สำหรับเว็บนี้ครั้งแรก</summary><p>เจ้าของเว็บสร้างแอปที่ <a href="https://developers.facebook.com/apps/" target="_blank" rel="noopener noreferrer">Meta for Developers</a> แล้วนำ App ID กับ App Secret มาตั้งค่าครั้งเดียว ช่องนี้ไม่ใช่ Page token</p><p>ตั้งค่า Valid OAuth Redirect URI เป็น <code>https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher?action=callback</code> และขอสิทธิ์ pages_show_list, pages_read_engagement, pages_manage_posts</p><div class="fp-fields"><label>Meta App ID<input id="fpAppId" inputmode="numeric" autocomplete="off"></label><label>Meta App Secret<input id="fpAppSecret" type="password" autocomplete="new-password"></label><button class="btn" id="fpSaveApp" type="button">บันทึกการตั้งค่าแอป</button></div></details><div id="fpPages" class="fp-pages" aria-label="เพจ Facebook ที่เชื่อมต่อ">กำลังตรวจการเชื่อมต่อ…</div>
@@ -3888,7 +3894,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
               <p class="fp-preview-text" id="fpPreviewText">ข้อความโพสต์จะแสดงตรงนี้</p>
               <a id="fpPreviewLink" class="fp-preview-link" href="#" target="_blank" rel="noopener noreferrer" aria-label="ดูตัวอย่างปลายทางเมื่อกดภาพ">
                 <div id="fpImageEmpty" class="fp-image-empty">อัปโหลดรูปเพื่อดูตัวอย่าง</div><img id="fpPreviewImage" class="fp-preview-image" alt="ภาพโพสต์ตัวอย่าง" hidden>
-                <div class="fp-preview-bottom"><div><small id="fpPreviewDomain">URL ปลายทาง</small><strong>เปิดลิงก์จากภาพ</strong></div><span>เรียนรู้เพิ่มเติม</span></div>
+                <div class="fp-preview-bottom"><div><small id="fpPreviewDomain">URL ปลายทาง</small><strong>เปิดลิงก์จากภาพ</strong></div><span>ดูรายละเอียด</span></div>
               </a>
             </div>
           </section>
