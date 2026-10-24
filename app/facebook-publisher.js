@@ -26,7 +26,7 @@
     const banner=$('fpBrowserStatus');
     if(!banner)return;
     banner.dataset.state=data.loggedIn?'on':'off';
-    banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · กดเชื่อมเพจเพื่ออนุญาตการโพสต์':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
+    banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · ยังไม่ได้เชื่อมสิทธิ์เพจ (ตั้งค่าระบบด้านล่างแล้วกดเชื่อม Facebook)':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
   });
   function selectedPages(){return [...$('fpPages').querySelectorAll('input:checked')].map(el=>el.value)}
   async function api(action,method='GET',body,contentType){
