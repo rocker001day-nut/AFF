@@ -65,12 +65,12 @@ async function syncUploadPostPages(user,key){
 }
 async function member(req){
   const token=(req.headers.get('authorization')||'').match(/^Bearer\s+(.+)$/i)?.[1];
-  if(!token)throw problem('กรุณาเข้าสู่ระบบ Google ก่อน',401);
+  if(!token)throw problem('กรุณาเข้าสู่ระบบก่อน',401);
   const {data:{user},error}=await admin.auth.getUser(token);
   if(error||!user)throw problem('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่',401);
   const result=await admin.from('team_members').select('user_id,role').eq('user_id',user.id).eq('active',true).maybeSingle();
   check(result.error);
-  if(user.is_anonymous)throw problem('กรุณาเข้าสู่ระบบ Google ก่อน',401);
+  if(user.is_anonymous)throw problem('กรุณาเข้าสู่ระบบก่อน',401);
   return {...user,teamRole:result.data?.role||null};
 }
 async function graph(path,token,form){
