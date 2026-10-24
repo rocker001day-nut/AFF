@@ -34,7 +34,7 @@
     if(!client)throw Error('ระบบล็อกอินยังไม่พร้อม');
     const session=await client.auth.getSession();
     const token=session.data?.session?.access_token;
-    if(!token)throw Error('กรุณาเข้าสู่ระบบ Google บนเว็บ AFF ก่อน');
+    if(!token)throw Error('กรุณาเข้าสู่ระบบก่อน');
     const response=await fetch(ENDPOINT+'?action='+encodeURIComponent(action),{
       method,headers:{Authorization:'Bearer '+token,...(body?{'Content-Type':contentType||'application/json'}:{})},
       body:body?(contentType?body:JSON.stringify(body)):undefined,cache:'no-store'
