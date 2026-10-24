@@ -67,11 +67,11 @@
       if(!Number.isFinite(start))throw Error('เลือกเวลาเริ่มโพสต์');
       planned=planTimes(start,delay,pages);
     }catch(error){
-      const item=root.document.createElement('li');item.textContent=error.message;host.appendChild(item);
+      const item=root.document.createElement('li');item.className='fp-queue-empty';item.textContent=error.message;host.appendChild(item);
       $('fpQueueCount').textContent='ตรวจเวลาและดีเลย์';return;
     }
     $('fpQueueCount').textContent=pages.length+' เพจ · ห่างกัน '+delay+' วินาที';
-    if(!planned.length){const item=root.document.createElement('li');item.textContent='เชื่อม Facebook แล้วเลือกเพจ';host.appendChild(item);return}
+    if(!planned.length){const item=root.document.createElement('li');item.className='fp-queue-empty';item.textContent='เชื่อม Facebook แล้วเลือกเพจ';host.appendChild(item);return}
     planned.forEach((job,index)=>{
       const item=root.document.createElement('li'),number=root.document.createElement('strong'),body=root.document.createElement('span'),time=root.document.createElement('time');
       number.textContent=String(index+1).padStart(2,'0');
