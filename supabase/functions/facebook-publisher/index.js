@@ -100,6 +100,38 @@ async function card(req,id){
     '<script>location.replace('+JSON.stringify(destination).replace(/</g,'\\u003c')+')</script></body></html>';
   return new Response(html,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'public,max-age=300'}});
 }
+async function connectFacebookToken(user,providerToken){
+  const config=await metaConfig();
+  if(!config)throw problem('เว็บยังไม่ได้เปิด Meta App กลาง',503);
+  if(!providerToken||providerToken.length>4096)throw problem('Facebook Login ไม่ส่งสิทธิ์เพจกลับมา กรุณาเชื่อมใหม่',422);
+  const proof=new URLSearchParams({input_token:providerToken,access_token:config.appId+'|'+config.appSecret});
+  const debugResponse=await fetch(GRAPH+'/debug_token?'+proof,{signal:AbortSignal.timeout(15000)});
+  const debug=await debugResponse.json().catch(()=>({}));
+  const details=debug.data||{};
+  if(!debugResponse.ok||!details.is_valid||String(details.app_id)!==String(config.appId))throw problem('สิทธิ์ Facebook ไม่ได้ออกให้แอป AFF',403);
+  const facebookId=String(details.user_id||'');
+  const ownsIdentity=(user.identities||[]).some(identity=>identity.provider==='facebook'&&String(identity.identity_data?.sub||identity.provider_id||'')===facebookId);
+  if(!ownsIdentity)throw problem('บัญชี Facebook ที่อนุญาตไม่ตรงกับผู้ใช้ที่เข้าสู่ระบบ',403);
+  const permissions=Array.isArray(details.scopes)?details.scopes:[];
+  if(['pages_show_list','pages_read_engagement','pages_manage_posts'].some(scope=>!permissions.includes(scope)))throw problem('กรุณาอนุญาตสิทธิ์ดูเพจและโพสต์ใน Facebook ให้ครบ',403);
+  const longQuery=new URLSearchParams({grant_type:'fb_exchange_token',client_id:config.appId,client_secret:config.appSecret,fb_exchange_token:providerToken});
+  const longResponse=await fetch(GRAPH+'/oauth/access_token?'+longQuery,{signal:AbortSignal.timeout(15000)});
+  const long=await longResponse.json().catch(()=>({}));
+  const token=longResponse.ok&&long.access_token?long.access_token:providerToken;
+  let next=GRAPH+'/me/accounts?fields=id,name,access_token,tasks&limit=100',count=0,savedCount=0;
+  while(next&&count++<5){
+    const response=await fetch(next,{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
+    const data=await response.json().catch(()=>({}));
+    if(!response.ok)throw problem(data.error?.message||'ดึงรายชื่อเพจไม่สำเร็จ',422);
+    for(const page of data.data||[]){
+      if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.access_token)continue;
+      const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:user.id,access_token_enc:await encrypt(page.access_token),provider:'meta',profile_username:null,updated_at:new Date().toISOString()},{onConflict:'id,connected_by'});
+      check(saved.error);savedCount++;
+    }
+    next=data.paging?.next||'';
+  }
+  return savedCount;
+}
 async function callback(req){
   const url=new URL(req.url),state=url.searchParams.get('state')||'',code=url.searchParams.get('code')||'';
   if(!/^[0-9a-f-]{72}$/.test(state)||!code)throw problem('Facebook Login ไม่สำเร็จ',400);
@@ -231,6 +263,11 @@ Deno.serve(async req=>{
     if(action==='worker'&&req.method==='POST')return await worker(req);
     if(action==='setup'&&req.method==='GET')return send(req,{ok:true,oauthReady:!!(await metaConfig())||!!(await uploadPostConfig())});
     const user=await member(req);
+    if(action==='connect-facebook-token'&&req.method==='POST'){
+      const input=await req.json();
+      const count=await connectFacebookToken(user,String(input.providerToken||''));
+      return send(req,{ok:true,connected:count>0,pageCount:count});
+    }
     if(action==='login'&&req.method==='POST'){
       const uploadKey=await uploadPostConfig();
       if(uploadKey){
