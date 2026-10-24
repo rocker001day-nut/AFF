@@ -24,19 +24,19 @@
     @media(max-width:700px) { .public-header { align-items:flex-start; flex-direction:column; } }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" defer></script>
-  <script src="/app/publisher-auth.js" defer></script>
-  <script src="/app/facebook-publisher.js?v=20261024-public" defer></script>
+  <script src="/app/publisher-auth.js?v=20261024-facebook" defer></script>
+  <script src="/app/facebook-publisher.js?v=20261024-facebook" defer></script>
 </head>
 <body>
   <header class="public-header">
     <div><a href="/"><strong>AFF</strong></a><small>โพสต์ภาพแนบลิงก์สำหรับทุกคน</small></div>
-    <div class="public-auth"><span id="publicAuthStatus">กำลังตรวจบัญชี…</span><button class="btn upload" id="publicLogin" type="button">เข้าสู่ระบบ Google</button><button class="btn" id="publicLogout" type="button" hidden>ออกจากระบบ</button></div>
+    <div class="public-auth"><span id="publicAuthStatus">กำลังตรวจบัญชี…</span><button class="btn upload" id="publicLogin" type="button">เชื่อม Facebook และดึงเพจ</button><button class="btn" id="publicLogout" type="button" hidden>ออกจากระบบ</button></div>
   </header>
   <main>
     <div class="app-page" id="facebookPublisherPage">
       <section class="panel fp-hero">
         <div><span class="fp-chip">FACEBOOK · AFF</span><h2>สร้างการ์ดภาพกดไปลิงก์</h2><p>เลือกภาพ ใส่ลิงก์ปลายทาง แล้วสร้างการ์ดไว้แชร์บน Facebook</p></div>
-        <span class="fp-chip">สร้างลิงก์ได้ทันที</span>
+        <span class="fp-chip">เข้าสู่ระบบเพื่อเริ่ม</span>
       </section>
       <div class="fp-workspace">
         <div class="fp-form">
