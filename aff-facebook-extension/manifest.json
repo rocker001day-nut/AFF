@@ -1,10 +1,12 @@
 {
   "manifest_version": 3,
-  "name": "AFF Facebook Check",
-  "version": "0.3.0",
-  "description": "ตรวจสถานะล็อกอิน Facebook ใน Chrome เพื่อเริ่มเชื่อมเพจบน AFF",
+  "name": "AFF Facebook Pages",
+  "version": "0.4.0",
+  "description": "ตรวจบัญชี Facebook และค้นหาเพจที่แสดงใน Chrome สำหรับ AFF",
   "permissions": [
-    "cookies"
+    "cookies",
+    "tabs",
+    "scripting"
   ],
   "host_permissions": [
     "https://*.facebook.com/*"
