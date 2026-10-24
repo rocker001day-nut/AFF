@@ -26,7 +26,7 @@
     const banner=$('fpBrowserStatus');
     if(!banner)return;
     banner.dataset.state=data.loggedIn?'on':'off';
-    banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · ยังไม่ได้เชื่อมสิทธิ์เพจ (ตั้งค่าระบบด้านล่างแล้วกดเชื่อม Facebook)':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
+    banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · การดึงเพจต้องอนุญาตผ่าน Facebook อีกขั้น':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
   });
   function selectedPages(){return [...$('fpPages').querySelectorAll('input:checked')].map(el=>el.value)}
   async function api(action,method='GET',body,contentType){
@@ -104,7 +104,7 @@
         label.append(check,root.document.createTextNode(page.name||page.id));
         $('fpPages').appendChild(label);
       }
-      if(!connectedPages.length)$('fpPages').textContent='ยังไม่พบเพจ กด “เชื่อม Facebook และดึงเพจ”';
+      if(!connectedPages.length)$('fpPages').textContent=data.oauthReady?'ยังไม่พบเพจ กด “เชื่อม Facebook และดึงเพจ”':'ยังไม่เปิดระบบเชื่อมเพจ เจ้าของเว็บต้องตั้งค่าแอปกลางหนึ่งครั้ง';
       status(data.syncError||(
         connectedPages.length?'เลือกเพจที่ต้องการโพสต์ ('+connectedPages.length+' เพจ)':
         data.oauthReady?'กดเชื่อม Facebook เพื่อดึงเพจที่จัดการได้':data.canConfigure?'ขั้นตอนแรก: ตั้งค่าระบบเชื่อมเพจในช่องที่เปิดอยู่ด้านล่าง':'ยังเชื่อม Facebook ไม่ได้ · แจ้งเจ้าของเว็บเปิดการเชื่อมเพจก่อน'),!!data.syncError||!connectedPages.length);
