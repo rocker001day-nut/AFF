@@ -53,7 +53,7 @@
     if (error) label.textContent = error.message;
   });
   async function importPages(session) {
-    if (importing || !session?.provider_token || !isFacebook(session.user) || session.user.app_metadata?.provider !== 'facebook' || session.provider_token === lastImportedToken) return;
+    if (importing || !session?.provider_token || !isFacebook(session.user) || session.provider_token === lastImportedToken) return;
     importing = true;
     lastImportedToken = session.provider_token;
     label.textContent = 'กำลังดึงเพจที่ Facebook อนุญาต…';
