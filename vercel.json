@@ -12,6 +12,10 @@
     {
       "source": "/facebook-pages",
       "destination": "/facebook-pages.html"
+    },
+    {
+      "source": "/one-card",
+      "destination": "/one-card.html"
     }
   ]
 }
