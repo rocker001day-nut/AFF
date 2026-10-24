@@ -28,7 +28,11 @@
     banner.dataset.state=data.loggedIn?'on':'off';
     banner.textContent=data.loggedIn?'พบการล็อกอิน Facebook ใน Chrome นี้ · การดึงเพจต้องอนุญาตผ่าน Facebook อีกขั้น':'ติดตั้งส่วนขยายแล้ว · ยังไม่พบการล็อกอิน Facebook ใน Chrome นี้';
   });
-  function selectedPages(){return [...$('fpPages').querySelectorAll('input:checked')].map(el=>el.value)}
+  let selectedPageIds=new Set();
+  function selectedPages(){return connectedPages.filter(page=>selectedPageIds.has(page.id)).map(page=>page.id)}
+  function updatePageButtons(){
+    $('fpPages').querySelectorAll('[data-page-id]').forEach(button=>button.setAttribute('aria-pressed',String(selectedPageIds.has(button.dataset.pageId))));
+  }
   async function api(action,method='GET',body,contentType){
     const client=root.__affSupabaseClient||root.supabaseClient;
     if(!client)throw Error('ระบบล็อกอินยังไม่พร้อม');
@@ -53,6 +57,11 @@
     $('fpPreviewLink').setAttribute('aria-disabled',String(!destination));
     const host=$('fpQueue');host.replaceChildren();
     const pages=selectedPages();let planned=[];
+    $('fpSelectedCount').textContent=pages.length+' จาก '+connectedPages.length+' เพจ';
+    $('fpSelectAll').disabled=!connectedPages.length;
+    $('fpClearPages').disabled=!pages.length;
+    const first=connectedPages.find(page=>page.id===pages[0]);
+    $('fpPreviewPage').textContent=!first?'เพจที่เลือก':pages.length===1?(first.name||first.id):(first.name||first.id)+' และอีก '+(pages.length-1)+' เพจ';
     try{
       const start=new Date($('fpStart').value).getTime();
       if(!Number.isFinite(start))throw Error('เลือกเวลาเริ่มโพสต์');
@@ -86,6 +95,7 @@
     }catch{return []}
   }
   const saved=restoreDraft();
+  selectedPageIds=new Set(saved);
   async function loadPages(){
     try{
       const data=await api('status');
@@ -97,12 +107,18 @@
       $('fpConnect').disabled=!data.oauthReady;
       $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'เจ้าของเว็บตั้งค่าการเชื่อม Facebook หนึ่งครั้งก่อน';
       $('fpPages').replaceChildren();
+      if(connectedPages.length)selectedPageIds=new Set([...selectedPageIds].filter(id=>connectedPages.some(page=>page.id===id)));
       for(const page of connectedPages){
-        const label=root.document.createElement('label'),check=root.document.createElement('input');
-        check.type='checkbox';check.value=page.id;check.checked=saved.includes(page.id);
-        check.addEventListener('change',render);
-        label.append(check,root.document.createTextNode(page.name||page.id));
-        $('fpPages').appendChild(label);
+        const button=root.document.createElement('button');
+        button.type='button';button.className='fp-page-tab';button.dataset.pageId=page.id;
+        button.setAttribute('aria-pressed',String(selectedPageIds.has(page.id)));
+        button.textContent=page.name||page.id;
+        button.addEventListener('click',()=>{
+          if(selectedPageIds.has(page.id))selectedPageIds.delete(page.id);
+          else selectedPageIds.add(page.id);
+          updatePageButtons();render();
+        });
+        $('fpPages').appendChild(button);
       }
       if(!connectedPages.length)$('fpPages').textContent=data.oauthReady?'ยังไม่พบเพจ กด “เชื่อม Facebook และดึงเพจ”':'ยังไม่เปิดระบบเชื่อมเพจ เจ้าของเว็บต้องตั้งค่าแอปกลางหนึ่งครั้ง';
       status(data.syncError||(
@@ -228,6 +244,12 @@
   $('fpCopyCard').addEventListener('click',async()=>{
     try{await root.navigator.clipboard.writeText([$('fpCaption').value.trim(),$('fpCardLink').href].filter(Boolean).join('\n\n'));cardStatus('คัดลอกข้อความพร้อมลิงก์แล้ว · วางในโพสต์ Facebook ได้เลย')}
     catch{cardStatus('คัดลอกอัตโนมัติไม่ได้ กดลิงก์ค้างไว้เพื่อคัดลอก',true)}
+  });
+  $('fpSelectAll').addEventListener('click',()=>{
+    selectedPageIds=new Set(connectedPages.map(page=>page.id));updatePageButtons();render();
+  });
+  $('fpClearPages').addEventListener('click',()=>{
+    selectedPageIds.clear();updatePageButtons();render();
   });
   $('fpConnect').addEventListener('click',connect);
   $('fpSaveApp').addEventListener('click',saveApp);
