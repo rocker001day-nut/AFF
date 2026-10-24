@@ -16,7 +16,7 @@ async function check() {
 
 document.getElementById('refresh').addEventListener('click', check);
 document.getElementById('openAFF').addEventListener('click', () => {
-  chrome.tabs.create({ url: 'https://aff-lyart.vercel.app/?affConnect=1#publisher' });
+  chrome.tabs.create({ url: 'https://aff-lyart.vercel.app/post-a-card?affConnect=1' });
 });
 document.getElementById('openFacebook').addEventListener('click', () => {
   chrome.tabs.create({ url: 'https://www.facebook.com/' });
