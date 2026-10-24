@@ -8,6 +8,10 @@
     {
       "source": "/post-a-card",
       "destination": "/post-a-card.html"
+    },
+    {
+      "source": "/facebook-pages",
+      "destination": "/facebook-pages.html"
     }
   ]
 }
