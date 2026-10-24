@@ -120,6 +120,7 @@
     render();
   }
   async function connect(){
+    if(typeof root.__affFacebookLogin==='function')return root.__affFacebookLogin();
     try{
       $('fpConnect').disabled=true;
       const data=await api('login','POST',{});
