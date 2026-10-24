@@ -34,22 +34,24 @@
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" defer></script>
   <script src="/app/publisher-auth.js?v=20261024-pages1" defer></script>
-  <script src="/app/facebook-pages.js?v=20261024-pages1" defer></script>
+  <script src="/app/facebook-pages.js?v=20261025-local1" defer></script>
 </head>
 <body>
   <header><a href="/">AFF</a><a href="/post-a-card">เครื่องมือโพสต์</a></header>
   <main>
     <span class="eyebrow">ขั้นที่ 1 · เชื่อมบัญชี</span>
     <h1>ดูเพจ Facebook ที่คุณจัดการ</h1>
-    <p class="lead">กดเชื่อม Facebook หนึ่งครั้ง จากนั้นเลือกอนุญาตเพจที่ต้องการ รายชื่อเพจจะขึ้นด้านล่างโดยอัตโนมัติ</p>
+    <p class="lead">ติดตั้งส่วนขยาย AFF แล้วกดค้นหาเพจ ระบบจะใช้บัญชี Facebook ที่เปิดอยู่ใน Chrome เครื่องนี้</p>
     <section class="card" aria-label="เชื่อม Facebook และรายชื่อเพจ">
       <strong>บัญชี Facebook ของคุณ</strong>
-      <div class="actions"><button class="primary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ</button></div>
-      <p id="publicAuthStatus" class="status" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ…</p>
-      <div id="pageSetupNotice" class="notice" hidden>เจ้าของเว็บยังต้องเปิด Facebook Login ของ AFF และตั้งค่า Meta App กลางหนึ่งครั้ง ผู้เข้าชมไม่ต้องกรอกโทเค็นหรือ App Secret <a href="/post-a-card">ดูหน้าตั้งค่าสำหรับเจ้าของเว็บ</a></div>
-      <h2>เพจที่บัญชีนี้จัดการ <small id="pageCount">0 เพจ</small></h2>
+      <div class="actions"><button class="primary" id="fpDiscoverLocal" type="button">ค้นหาเพจจาก Chrome</button><a href="/downloads/aff-facebook-pages-extension.zip" download>ดาวน์โหลดส่วนขยาย AFF</a><a href="https://github.com/rocker001day-nut/AFF/tree/main/aff-facebook-extension#ติดตั้ง" target="_blank" rel="noopener noreferrer">วิธีติดตั้ง</a></div>
+      <p id="fpLocalStatus" class="status" role="status" aria-live="polite">กำลังตรวจส่วนขยาย…</p>
+      <details><summary>อีกวิธี: เชื่อมผ่าน Facebook Login</summary><div class="actions"><button class="secondary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ</button></div><p id="publicAuthStatus" class="status" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ…</p><div id="pageSetupNotice" class="notice" hidden>วิธี Facebook Login ต้องให้เจ้าของเว็บตั้งค่า Meta App กลางก่อน ส่วนวิธี Chrome ใช้ส่วนขยาย AFF ด้านบน</div></details>
+      <h2>เพจที่พบ <small id="pageCount">0 เพจ</small></h2>
       <div id="pageList" class="pages" role="group" aria-label="เพจ Facebook">เชื่อม Facebook เพื่อแสดงรายชื่อเพจ</div>
       <p id="pageStatus" class="fine" role="status" aria-live="polite"></p>
+      <div class="actions"><a id="goOneCard" href="/one-card" hidden>ไปเตรียม One Card Link Image Post →</a></div>
+      <p class="fine">รายชื่อจาก Chrome เป็นผลการค้นหาบนหน้า Facebook Pages โปรดตรวจว่าเพจนั้นให้สิทธิ์จัดการก่อนใช้โพสต์ · คุกกี้ Facebook ไม่ถูกส่งให้ AFF</p>
     </section>
   </main>
 </body>
