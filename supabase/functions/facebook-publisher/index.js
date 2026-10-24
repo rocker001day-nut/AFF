@@ -58,9 +58,7 @@ async function syncUploadPostPages(user,key){
   for(const page of pages){
     const id=String(page.page_id||page.id||''),name=String(page.page_name||page.name||id);
     if(!/^[0-9]{5,30}$/.test(id)||page.profile&&page.profile!==profile)continue;
-    const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',id).maybeSingle();check(existing.error);
-    if(existing.data&&existing.data.connected_by!==user.id)continue;
-    const saved=await admin.from('facebook_publisher_pages').upsert({id,name,connected_by:user.id,access_token_enc:'',provider:'upload-post',profile_username:profile,updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
+    const saved=await admin.from('facebook_publisher_pages').upsert({id,name,connected_by:user.id,access_token_enc:'',provider:'upload-post',profile_username:profile,updated_at:new Date().toISOString()},{onConflict:'id,connected_by'});check(saved.error);
     activeIds.push(id);
   }
   return activeIds;
@@ -130,19 +128,17 @@ async function callback(req){
   }
   for(const page of pages){
     if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.access_token)continue;
-    const existing=await admin.from('facebook_publisher_pages').select('connected_by').eq('id',page.id).maybeSingle();check(existing.error);
-    if(existing.data&&existing.data.connected_by!==record.data.user_id)continue;
-    const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),provider:'meta',profile_username:null,updated_at:new Date().toISOString()},{onConflict:'id'});check(saved.error);
+    const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),provider:'meta',profile_username:null,updated_at:new Date().toISOString()},{onConflict:'id,connected_by'});check(saved.error);
   }
   return new Response(null,{status:302,headers:{Location:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher','Cache-Control':'no-store'}});
 }
 async function reconcileUploadJob(req){
   const before=new Date(Date.now()-30000).toISOString();
-  const pending=await admin.from('facebook_publisher_jobs').select('id,page_id').eq('status','uncertain').lte('finished_at',before).order('finished_at',{ascending:true}).limit(1);
+  const pending=await admin.from('facebook_publisher_jobs').select('id,page_id,connected_by').eq('status','uncertain').lte('finished_at',before).order('finished_at',{ascending:true}).limit(1);
   check(pending.error);
   const job=pending.data?.[0];
   if(!job)return send(req,{ok:true,processed:0});
-  const page=await admin.from('facebook_publisher_pages').select('provider').eq('id',job.page_id).maybeSingle();check(page.error);
+  const page=await admin.from('facebook_publisher_pages').select('provider').eq('id',job.page_id).eq('connected_by',job.connected_by).maybeSingle();check(page.error);
   if(page.data?.provider!=='upload-post')return send(req,{ok:true,processed:0});
   try{
     const key=await uploadPostConfig();
@@ -177,8 +173,9 @@ async function worker(req){
   const job=claimed.data?.[0];if(!job)return await reconcileUploadJob(req);
   let accepted=false;
   try {
+    const owner=await admin.from('facebook_publisher_jobs').select('connected_by').eq('id',job.id).single();check(owner.error);
     const [pages,batches]=await Promise.all([
-      admin.from('facebook_publisher_pages').select('access_token_enc,provider,profile_username').eq('id',job.page_id).single(),
+      admin.from('facebook_publisher_pages').select('access_token_enc,provider,profile_username').eq('id',job.page_id).eq('connected_by',owner.data.connected_by).single(),
       admin.from('facebook_publisher_batches').select('id,caption,destination,image_path').eq('id',job.batch_id).single()
     ]);
     check(pages.error);check(batches.error);
@@ -327,7 +324,7 @@ Deno.serve(async req=>{
       const selected=await admin.from('facebook_publisher_pages').select('id').in('id',pageIds).eq('connected_by',user.id).eq('provider',provider);check(selected.error);
       if(selected.data.length!==pageIds.length)throw problem('มีเพจที่ยังไม่ได้เชื่อม');
       const batch=await admin.from('facebook_publisher_batches').insert({created_by:user.id,caption,destination:dest,image_path:path,delay_seconds:delay,status:'draft'}).select('id').single();check(batch.error);
-      const jobs=pageIds.map((page_id,index)=>({batch_id:batch.data.id,page_id,scheduled_at:new Date(start.getTime()+index*delay*1000).toISOString()}));
+      const jobs=pageIds.map((page_id,index)=>({batch_id:batch.data.id,page_id,connected_by:user.id,scheduled_at:new Date(start.getTime()+index*delay*1000).toISOString()}));
       const inserted=await admin.from('facebook_publisher_jobs').insert(jobs);check(inserted.error);
       const queued=await admin.from('facebook_publisher_batches').update({status:'queued'}).eq('id',batch.data.id);check(queued.error);
       return send(req,{ok:true,batchId:batch.data.id,jobs:jobs.map(j=>({pageId:j.page_id,at:j.scheduled_at}))},201);
