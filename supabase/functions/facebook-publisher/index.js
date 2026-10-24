@@ -72,8 +72,8 @@ async function member(req){
   if(error||!user)throw problem('Session หมดอายุ กรุณาเข้าสู่ระบบใหม่',401);
   const result=await admin.from('team_members').select('user_id,role').eq('user_id',user.id).eq('active',true).maybeSingle();
   check(result.error);
-  if(!result.data)throw problem('บัญชีนี้ไม่มีสิทธิ์ทีม AFF',403);
-  return {...user,teamRole:result.data.role};
+  if(user.is_anonymous)throw problem('กรุณาเข้าสู่ระบบ Google ก่อน',401);
+  return {...user,teamRole:result.data?.role||null};
 }
 async function graph(path,token,form){
   const endpoint=GRAPH+'/'+path.replace(/^\//,'');
@@ -290,7 +290,10 @@ Deno.serve(async req=>{
       if(!ext)throw problem('รองรับ JPG, PNG หรือ WebP');
       if(Number(req.headers.get('content-length')||0)>8388608)throw problem('ภาพต้องไม่เกิน 8 MB',413);
       const bytes=await req.arrayBuffer();if(!bytes.byteLength||bytes.byteLength>8388608)throw problem('ภาพต้องไม่เกิน 8 MB',413);
-      const path=user.id+'/'+crypto.randomUUID()+'.'+ext;
+      const day=new Date().toISOString().slice(0,10).replaceAll('-','');
+      const existing=await admin.storage.from(BUCKET).list(user.id,{limit:21,search:day+'-'});check(existing.error);
+      if((existing.data||[]).filter(file=>file.name.startsWith(day+'-')).length>=20)throw problem('อัปโหลดภาพครบ 20 ภาพต่อวันแล้ว กรุณาลองใหม่พรุ่งนี้',429);
+      const path=user.id+'/'+day+'-'+crypto.randomUUID()+'.'+ext;
       const upload=await admin.storage.from(BUCKET).upload(path,bytes,{contentType:type,upsert:false});check(upload.error);
       return send(req,{ok:true,path,publicUrl:admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl});
     }
@@ -298,7 +301,7 @@ Deno.serve(async req=>{
       const b=await req.json(),destination=validDestination(b.destination),caption=String(b.caption||'').trim();
       const path=String(b.imagePath||'');
       if(!destination||caption.length>5000)throw problem('ตรวจลิงก์ปลายทางและข้อความก่อนสร้างการ์ด');
-      if(!path.startsWith(user.id+'/')||!/^[0-9a-f-]{36}\/[-0-9a-f]+\.(jpg|png|webp)$/i.test(path))throw problem('กรุณาอัปโหลดภาพใหม่');
+      if(!path.startsWith(user.id+'/')||!/^[0-9a-f-]{36}\/(?:\d{8}-)?[-0-9a-f]+\.(jpg|png|webp)$/i.test(path))throw problem('กรุณาอัปโหลดภาพใหม่');
       const imageUrl=admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
       const imageResponse=await fetch(imageUrl,{method:'HEAD'});
       if(!imageResponse.ok)throw problem('ไม่พบภาพที่อัปโหลด');
@@ -312,7 +315,7 @@ Deno.serve(async req=>{
       if(!dest||caption.length>5000||!Number.isInteger(delay)||delay<5||delay>3600||!pageIds.length||pageIds.length>30||!/^https?:/.test(dest))throw problem('ตรวจ URL ข้อความ เพจ และดีเลย์ก่อนส่ง');
       if(!Number.isFinite(start.getTime())||start.getTime()<Date.now()+10000||start.getTime()>Date.now()+30*86400000)throw problem('เวลาเริ่มต้องห่างอย่างน้อย 10 วินาที และไม่เกิน 30 วัน');
       const path=String(b.imagePath||'');
-      if(!path.startsWith(user.id+'/')||!/^[0-9a-f-]{36}\/[-0-9a-f]+\.(jpg|png|webp)$/i.test(path))throw problem('กรุณาอัปภาพใหม่');
+      if(!path.startsWith(user.id+'/')||!/^[0-9a-f-]{36}\/(?:\d{8}-)?[-0-9a-f]+\.(jpg|png|webp)$/i.test(path))throw problem('กรุณาอัปภาพใหม่');
       const imageUrl=admin.storage.from(BUCKET).getPublicUrl(path).data.publicUrl;
       const checkImage=await fetch(imageUrl,{method:'HEAD'});
       if(!checkImage.ok)throw problem('ไม่พบภาพที่อัปโหลด');
