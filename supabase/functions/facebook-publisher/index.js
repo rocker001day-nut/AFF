@@ -130,7 +130,7 @@ async function callback(req){
     if(!/^[0-9]{5,30}$/.test(String(page.id))||!page.access_token)continue;
     const saved=await admin.from('facebook_publisher_pages').upsert({id:page.id,name:page.name||page.id,connected_by:record.data.user_id,access_token_enc:await encrypt(page.access_token),provider:'meta',profile_username:null,updated_at:new Date().toISOString()},{onConflict:'id,connected_by'});check(saved.error);
   }
-  return new Response(null,{status:302,headers:{Location:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher','Cache-Control':'no-store'}});
+  return new Response(null,{status:302,headers:{Location:'https://aff-lyart.vercel.app/post-a-card?facebook_connected=1','Cache-Control':'no-store'}});
 }
 async function reconcileUploadJob(req){
   const before=new Date(Date.now()-30000).toISOString();
@@ -237,7 +237,7 @@ Deno.serve(async req=>{
         const profile=uploadPostProfile(user.id);
         try{await uploadPost('/api/uploadposts/users',uploadKey,{method:'POST',json:{username:profile,display_name:'AFF Facebook '+user.id.slice(0,8)}})}
         catch(error){if(error.upstreamStatus!==409)throw error}
-        const linked=await uploadPost('/api/uploadposts/users/generate-jwt',uploadKey,{method:'POST',json:{username:profile,platforms:['facebook'],show_calendar:false,connect_title:'เชื่อมเพจ Facebook กับ AFF',redirect_url:'https://aff-lyart.vercel.app/?facebook_connected=1#publisher'}});
+        const linked=await uploadPost('/api/uploadposts/users/generate-jwt',uploadKey,{method:'POST',json:{username:profile,platforms:['facebook'],show_calendar:false,connect_title:'เชื่อมเพจ Facebook กับ AFF',redirect_url:'https://aff-lyart.vercel.app/post-a-card?facebook_connected=1'}});
         const url=new URL(linked.access_url||'');
         if(url.protocol!=='https:'||url.hostname!=='app.upload-post.com')throw problem('ลิงก์เชื่อม Facebook ไม่ถูกต้อง',502);
         return send(req,{ok:true,url:url.href,provider:'upload-post'});
