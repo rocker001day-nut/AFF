@@ -40,7 +40,7 @@
     const { error } = await client.auth.signInWithOAuth({
       provider: 'facebook',
       options: {
-        redirectTo: location.origin + '/post-a-card',
+        redirectTo: location.origin + (location.pathname === '/facebook-pages' || location.pathname === '/facebook-pages.html' ? '/facebook-pages' : '/post-a-card'),
         scopes: 'email,pages_show_list,pages_read_engagement,pages_manage_posts'
       }
     });
