@@ -4,7 +4,7 @@
   const ENDPOINT='https://txbsrtunejnqaheuohck.supabase.co/functions/v1/facebook-publisher';
   const $=id=>root.document&&root.document.getElementById(id);
   let imageUrl='',connectedPages=[],busy=false;
-  let pendingExtensionConnect=new URL(root.location.href).searchParams.get('affConnect')==='1';
+  let pendingExtensionConnect=new URLSearchParams(root.location?.search||'').get('affConnect')==='1';
   function validUrl(value){try{const u=new URL(String(value||'').trim());return u.protocol==='https:'&&u.hostname?u:null}catch{return null}}
   function planTimes(start,delaySeconds,pages){
     const base=Number(start),delay=Number(delaySeconds);

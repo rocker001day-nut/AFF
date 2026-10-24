@@ -16,6 +16,17 @@
   window.addEventListener('message', event => {
     if (event.source === window && event.origin === origin &&
         event.data?.source === 'aff-publisher' && event.data?.type === 'CHECK_FACEBOOK') report();
+    if (event.source === window && event.origin === origin &&
+        event.data?.source === 'aff-publisher' && event.data?.type === 'DISCOVER_PAGES') {
+      chrome.runtime.sendMessage({ type: 'AFF_DISCOVER_PAGES' }).then(reply => {
+        window.postMessage({ source: 'aff-facebook-extension', type: 'FACEBOOK_PAGES',
+          requestId: event.data.requestId, loggedIn: reply?.loggedIn === true,
+          pages: Array.isArray(reply?.pages) ? reply.pages : [], error: reply?.error || '' }, origin);
+      }).catch(() => {
+        window.postMessage({ source: 'aff-facebook-extension', type: 'FACEBOOK_PAGES',
+          requestId: event.data.requestId, loggedIn: false, pages: [], error: 'ส่วนขยายไม่ตอบสนอง' }, origin);
+      });
+    }
   });
   report();
 })();
