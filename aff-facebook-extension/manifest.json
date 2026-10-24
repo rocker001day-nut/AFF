@@ -1,16 +1,28 @@
 {
   "manifest_version": 3,
   "name": "AFF Facebook Check",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "ตรวจสถานะล็อกอิน Facebook ใน Chrome เพื่อเริ่มเชื่อมเพจบน AFF",
-  "permissions": ["cookies"],
-  "host_permissions": ["https://*.facebook.com/*"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_popup": "popup.html" },
+  "permissions": [
+    "cookies"
+  ],
+  "host_permissions": [
+    "https://*.facebook.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
-      "matches": ["https://aff-lyart.vercel.app/*"],
-      "js": ["content.js"],
+      "matches": [
+        "https://aff-lyart.vercel.app/*"
+      ],
+      "js": [
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ]
