@@ -33,25 +33,30 @@
     .fine { font-size:13px; color:#667589; line-height:1.5; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" defer></script>
-  <script src="/app/publisher-auth.js?v=20261024-pages1" defer></script>
-  <script src="/app/facebook-pages.js?v=20261025-local1" defer></script>
+  <script src="/app/publisher-auth.js?v=20261026-direct1" defer></script>
+  <script src="/app/facebook-pages.js?v=20261026-direct1" defer></script>
 </head>
 <body>
   <header><a href="/">AFF</a><a href="/post-a-card">เครื่องมือโพสต์</a></header>
   <main>
     <span class="eyebrow">ขั้นที่ 1 · เชื่อมบัญชี</span>
     <h1>ดูเพจ Facebook ที่คุณจัดการ</h1>
-    <p class="lead">ติดตั้งส่วนขยาย AFF แล้วกดค้นหาเพจ ระบบจะใช้บัญชี Facebook ที่เปิดอยู่ใน Chrome เครื่องนี้</p>
+    <p class="lead">เข้าสู่ระบบ AFF แล้วกดเชื่อม Facebook เพื่อให้ระบบแสดงเพจที่คุณจัดการ เลือกเพจก่อนสร้างโพสต์ได้เลย</p>
     <section class="card" aria-label="เชื่อม Facebook และรายชื่อเพจ">
-      <strong>บัญชี Facebook ของคุณ</strong>
-      <div class="actions"><button class="primary" id="fpDiscoverLocal" type="button">ค้นหาเพจจาก Chrome</button><a href="/downloads/aff-facebook-pages-extension.zip" download>ดาวน์โหลดส่วนขยาย AFF</a><a href="https://github.com/rocker001day-nut/AFF/tree/main/aff-facebook-extension#ติดตั้ง" target="_blank" rel="noopener noreferrer">วิธีติดตั้ง</a></div>
-      <p id="fpLocalStatus" class="status" role="status" aria-live="polite">กำลังตรวจส่วนขยาย…</p>
-      <details><summary>อีกวิธี: เชื่อมผ่าน Facebook Login</summary><div class="actions"><button class="secondary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ</button></div><p id="publicAuthStatus" class="status" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ…</p><div id="pageSetupNotice" class="notice" hidden>วิธี Facebook Login ต้องให้เจ้าของเว็บตั้งค่า Meta App กลางก่อน ส่วนวิธี Chrome ใช้ส่วนขยาย AFF ด้านบน</div></details>
+      <strong>เชื่อม Facebook กับ AFF</strong>
+      <div class="actions"><button class="primary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ AFF</button></div>
+      <p id="publicAuthStatus" class="status" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ…</p>
+      <div id="pageSetupNotice" class="notice" hidden>เจ้าของเว็บต้องเปิดการเชื่อม Facebook ที่ <a href="/post-a-card">หน้าตั้งค่าการโพสต์</a> หนึ่งครั้ง ก่อนที่ทุกคนจะเชื่อมเพจของตัวเองได้</div>
+      <details><summary>ดูรายชื่อเพจจาก Chrome ด้วยส่วนขยาย AFF (ดูตัวอย่างเท่านั้น)</summary>
+        <p class="fine">วิธีนี้ดูชื่อเพจจากหน้า Facebook ที่เปิดอยู่ใน Chrome แต่ยังไม่ยืนยันสิทธิ์โพสต์ ต้องเชื่อม Facebook ด้านบนจึงจะโพสต์อัตโนมัติได้</p>
+        <div class="actions"><button class="secondary" id="fpDiscoverLocal" type="button">ค้นหาเพจจาก Chrome</button><a href="/downloads/aff-facebook-pages-extension.zip" download>ดาวน์โหลดส่วนขยาย AFF</a><a href="https://github.com/rocker001day-nut/AFF/tree/main/aff-facebook-extension#ติดตั้ง" target="_blank" rel="noopener noreferrer">วิธีติดตั้ง</a></div>
+        <p id="fpLocalStatus" class="status" role="status" aria-live="polite">กำลังตรวจส่วนขยาย…</p>
+      </details>
       <h2>เพจที่พบ <small id="pageCount">0 เพจ</small></h2>
       <div id="pageList" class="pages" role="group" aria-label="เพจ Facebook">เชื่อม Facebook เพื่อแสดงรายชื่อเพจ</div>
       <p id="pageStatus" class="fine" role="status" aria-live="polite"></p>
       <div class="actions"><a id="goOneCard" href="/one-card" hidden>ไปเตรียม One Card Link Image Post →</a></div>
-      <p class="fine">รายชื่อจาก Chrome เป็นผลการค้นหาบนหน้า Facebook Pages โปรดตรวจว่าเพจนั้นให้สิทธิ์จัดการก่อนใช้โพสต์ · คุกกี้ Facebook ไม่ถูกส่งให้ AFF</p>
+      <p class="fine">เพจที่เชื่อมผ่าน Facebook จะแสดงหลังอนุญาตสิทธิ์ · ส่วนขยาย Chrome ส่งเพียงชื่อและ ID เพจ ไม่ส่งคุกกี้ให้ AFF</p>
     </section>
   </main>
 </body>
