@@ -33,7 +33,7 @@
     .fine { font-size:13px; color:#667589; line-height:1.5; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" defer></script>
-  <script src="/app/publisher-auth.js?v=20261026-direct1" defer></script>
+  <script src="/app/publisher-auth.js?v=20261026-login2" defer></script>
   <script src="/app/facebook-pages.js?v=20261026-direct1" defer></script>
 </head>
 <body>
@@ -44,7 +44,7 @@
     <p class="lead"><a href="/">เข้าสู่ระบบ AFF</a> แล้วกดเชื่อม Facebook เพื่อให้ระบบแสดงเพจที่คุณจัดการ เลือกเพจก่อนสร้างโพสต์ได้เลย</p>
     <section class="card" aria-label="เชื่อม Facebook และรายชื่อเพจ">
       <strong>เชื่อม Facebook กับ AFF</strong>
-      <div class="actions"><button class="primary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ AFF</button></div>
+      <div class="actions"><button class="primary" id="publicGoogleLogin" type="button">เข้าสู่ระบบ Google</button><button class="primary" id="publicLogin" type="button" disabled>เชื่อม Facebook และดึงเพจ</button><button class="secondary" id="publicLogout" type="button" hidden>ออกจากระบบ AFF</button></div>
       <p id="publicAuthStatus" class="status" role="status" aria-live="polite">กำลังตรวจการเชื่อมต่อ…</p>
       <div id="pageSetupNotice" class="notice" hidden>เจ้าของเว็บต้องเปิดการเชื่อม Facebook ที่ <a href="/post-a-card">หน้าตั้งค่าการโพสต์</a> หนึ่งครั้ง ก่อนที่ทุกคนจะเชื่อมเพจของตัวเองได้</div>
       <details><summary>ดูรายชื่อเพจจาก Chrome ด้วยส่วนขยาย AFF (ดูตัวอย่างเท่านั้น)</summary>

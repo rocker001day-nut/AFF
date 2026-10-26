@@ -7,6 +7,7 @@
   const label = document.getElementById('publicAuthStatus');
   const login = document.getElementById('publicLogin');
   const logout = document.getElementById('publicLogout');
+  const google = document.getElementById('publicGoogleLogin');
   let ready = false, currentUser = null, connecting = false;
 
   function update(user) {
@@ -14,6 +15,7 @@
     login.hidden = false;
     login.disabled = !ready || !user || connecting;
     logout.hidden = !user;
+    if (google) google.hidden = !!user;
     label.textContent = !user ? 'เข้าสู่ระบบ AFF ก่อนเชื่อม Facebook' :
       ready ? 'เข้าสู่ระบบ AFF แล้ว · กดเชื่อม Facebook เพื่อดึงเพจ' :
       'เจ้าของเว็บยังไม่ได้เปิดการเชื่อม Facebook';
@@ -61,6 +63,19 @@
     }
   }
   window.__affFacebookLogin = loginWithFacebook;
+  if (google) google.addEventListener('click', async () => {
+    google.disabled = true;
+    label.textContent = 'กำลังเปิด Google Login…';
+    try {
+      const {error} = await client.auth.signInWithOAuth({
+        provider: 'google', options: {redirectTo: location.origin + location.pathname}
+      });
+      if (error) throw error;
+    } catch (error) {
+      label.textContent = 'เข้าสู่ระบบไม่สำเร็จ: ' + error.message;
+      google.disabled = false;
+    }
+  });
   login.addEventListener('click', loginWithFacebook);
   logout.addEventListener('click', async () => {
     const {error} = await client.auth.signOut();
