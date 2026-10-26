@@ -7,13 +7,13 @@
     :root{font-family:system-ui,"Segoe UI",Tahoma,sans-serif;color:#182638;background:#f5f7fb}*{box-sizing:border-box}body{margin:0}header{background:#14263f;color:#fff;padding:17px max(20px,calc((100vw - 1060px)/2));display:flex;justify-content:space-between}a{color:#1767e8}header a{color:#fff;text-decoration:none}main{max-width:1060px;margin:30px auto;padding:0 20px}h1{margin:8px 0}p{line-height:1.55;color:#58677a}.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,.85fr);gap:20px}.card{background:#fff;border:1px solid #dce4ee;border-radius:18px;padding:24px;box-shadow:0 10px 30px #17314e0b}.fields{display:grid;gap:16px}.fields label{display:grid;gap:7px;font-weight:650}.fields input,.fields textarea,.fields select{width:100%;border:1px solid #cfd8e5;border-radius:10px;padding:11px 12px;font:inherit}.fields textarea{min-height:85px;resize:vertical}.actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:20px}[hidden]{display:none!important}button{border:0;border-radius:10px;padding:12px 16px;font:inherit;font-weight:700;cursor:pointer;background:#1767e8;color:#fff}.muted{font-size:13px;color:#667589}.notice{background:#fff6e7;color:#714a06;border-radius:10px;padding:12px 14px;margin:14px 0}.preview{border:1px solid #dce4ee;border-radius:14px;overflow:hidden;background:#fff}.preview img{width:100%;aspect-ratio:1.3;object-fit:cover;display:block;background:#e5ebf3}.preview .info{padding:12px 14px}.preview small{color:#6a788a}.preview strong{display:block;margin:4px 0}.preview p{margin:0;font-size:14px}.caption{white-space:pre-wrap;overflow-wrap:anywhere}@media(max-width:760px){.grid{grid-template-columns:1fr}}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js" defer></script>
-  <script src="/app/one-card-auth.js?v=20261026-1" defer></script>
+  <script src="/app/one-card-auth.js?v=20261026-login2" defer></script>
   <script src="/app/one-card.js?v=20261026-1" defer></script>
 </head>
 <body>
   <header><a href="/">AFF</a><a href="/facebook-pages">เลือกเพจ</a></header>
   <main><small>ONE CARD · สร้างลิงก์ภาพ</small><h1>ภาพพร้อมลิงก์คลิกได้</h1><p>อัปโหลดภาพเพื่อสร้างลิงก์การ์ดที่กดแล้วไปเว็บปลายทาง คัดลอกไปวางโพสต์ในเพจ Facebook ได้</p>
-    <div class="notice">การสร้างลิงก์ใช้บัญชี AFF ที่เข้าสู่ระบบอยู่ <span id="ocAuthStatus">กำลังตรวจบัญชี…</span> · <a href="/">เข้าสู่ระบบ AFF</a><br>ส่วนการโพสต์อัตโนมัติต้องเชื่อมเพจผ่าน Facebook Login ที่เจ้าของเว็บเปิดใช้งานก่อน เพจที่พบจาก Chrome ยังใช้โพสต์อัตโนมัติไม่ได้</div>
+    <div class="notice">การสร้างลิงก์ใช้บัญชี AFF ที่เข้าสู่ระบบอยู่ <span id="ocAuthStatus">กำลังตรวจบัญชี…</span>  · <button id="ocGoogleLogin" type="button">เข้าสู่ระบบ Google</button><br>ส่วนการโพสต์อัตโนมัติต้องเชื่อมเพจผ่าน Facebook Login ที่เจ้าของเว็บเปิดใช้งานก่อน เพจที่พบจาก Chrome ยังใช้โพสต์อัตโนมัติไม่ได้</div>
     <div class="grid"><section class="card"><div class="fields">
       <label>เพจที่เลือก<input id="ocPage" readonly placeholder="กลับไปเลือกเพจก่อน"></label>
       <label>ภาพปก<input id="ocImage" type="file" accept="image/jpeg,image/png,image/webp"></label>
