@@ -63,3 +63,8 @@ body.dark #editPostPage .ep-warning { color: #fcd34d; }
 #fbEditDialog label { display: grid; gap: 6px; margin: 14px 0; font-size: 13px; }
 #fbEditDialog input { width: 100%; min-height: 42px; padding: 9px; border: 1px solid var(--line); border-radius: 10px; }
 #fbEditDialog .fb-edit-preview { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 34vh; overflow: auto; padding: 13px; border: 1px solid var(--line); border-radius: 10px; background: rgba(148,163,184,.08); font-size: 12px; }
+
+#editPostPage .ep-extension-setup { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:8px 0 14px; padding:12px; border:1px solid rgba(249,115,22,.24); border-radius:12px; background:rgba(249,115,22,.045); font-size:12px; }
+#editPostPage .ep-extension-setup details { flex-basis:100%; }
+#editPostPage .ep-extension-setup summary { cursor:pointer; font-weight:700; }
+#editPostPage .ep-extension-setup p { margin:8px 0 0; }
