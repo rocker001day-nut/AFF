@@ -7,6 +7,22 @@ const ID = /^\d+(?:_\d+)?$/;
 class ApiError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
 }
+function validAffiliateLink(link) {
+  try {
+    const url = new URL(link);
+    return url.protocol === 'https:' && ['s.shopee.co.th', 'shopee.co.th', 'www.shopee.co.th'].includes(url.hostname)
+      && url.pathname.length > 1 && link.length <= 2048;
+  } catch { return false; }
+}
+function replaceAffiliateLink(before, oldLink, newLink) {
+  if (!validAffiliateLink(oldLink) || !validAffiliateLink(newLink) || oldLink === newLink)
+    throw new ApiError(400, 'INVALID_AFFILIATE_LINK');
+  if (!before.includes(oldLink)) throw new ApiError(409, 'OLD_LINK_NOT_FOUND');
+  if (before.split(oldLink).length !== 2) throw new ApiError(409, 'MULTIPLE_LINK_MATCHES');
+  const next = before.charAt(before.indexOf(oldLink) + oldLink.length);
+  if (next && /[a-zA-Z0-9/?#&=%_.-]/.test(next)) throw new ApiError(409, 'OLD_LINK_PARTIAL');
+  return before.replace(oldLink, newLink);
+}
 function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.now() } = {}) {
   function settings() {
     const missing = REQUIRED.filter(key => !env[key]);
@@ -214,21 +230,11 @@ function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.
         const pageId = requireId(input.pageId), itemId = requireId(input.id);
         verifyTicket(value, input.ticket, pageId, itemId, input.kind);
         const oldLink = String(input.oldLink || ''), newLink = String(input.newLink || '');
-        const validLink = link => {
-          try {
-            const url = new URL(link);
-            return url.protocol === 'https:' && ['s.shopee.co.th', 'shopee.co.th', 'www.shopee.co.th'].includes(url.hostname)
-              && url.pathname.length > 1 && link.length <= 2048;
-          } catch { return false; }
-        };
-        if (!validLink(oldLink) || !validLink(newLink) || oldLink === newLink) throw new ApiError(400, 'INVALID_AFFILIATE_LINK');
         const page = await pageFor(value, pageId);
         const current = await graph(itemId, page.access_token, { fields: 'id,message,from' });
         if (current.id !== itemId || current.from?.id !== pageId) throw new ApiError(403, 'PAGE_ACCESS_DENIED');
         const before = String(current.message || '');
-        if (!before.includes(oldLink)) throw new ApiError(409, 'OLD_LINK_NOT_FOUND');
-        if (before.split(oldLink).length !== 2) throw new ApiError(409, 'MULTIPLE_LINK_MATCHES');
-        const after = before.replace(oldLink, newLink);
+        const after = replaceAffiliateLink(before, oldLink, newLink);
         const fingerprint = crypto.createHash('sha256').update(before).digest('hex');
         const afterFingerprint = crypto.createHash('sha256').update(after).digest('hex');
         if (action === 'preview-link') return json(res, 200, { id: itemId, before, after, fingerprint, afterFingerprint });
@@ -260,4 +266,4 @@ function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.
     }
   };
 }
-module.exports = { createHandler };
+module.exports = { createHandler, replaceAffiliateLink };
