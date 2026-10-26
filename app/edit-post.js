@@ -236,7 +236,13 @@
     const openPost = addText(fbActions, 'a', 'เปิดโพสต์ ↗', 'btn upload');
     openPost.href = record.postUrl; openPost.target = '_blank'; openPost.rel = 'noopener noreferrer';
     const openManager = addText(fbActions, 'button', 'ไปหน้าจัดการแฟนเพจ', 'btn');
-    openManager.type = 'button'; openManager.addEventListener('click', () => document.querySelector('[data-page-target="facebook"]')?.click());
+    openManager.type = 'button'; openManager.addEventListener('click', () => {
+      if (validShopee(record.newLink) && record.oldLink) {
+        sessionStorage.setItem('aff-edit-post-handoff-v1', JSON.stringify({ postUrl: record.postUrl, oldLink: record.oldLink, newLink: record.newLink }));
+      }
+      document.querySelector('[data-page-target="facebook"]')?.click();
+      message('เลือกเพจและโพสต์ให้ตรงรายการ แล้วกด “แก้ลิงก์ในข้อความ” · ระบบจะเติมลิงก์เดิมและใหม่ให้');
+    });
     const fbCheck = addText(facebook, 'label', '', 'ep-check');
     fbBox = document.createElement('input'); fbBox.type = 'checkbox'; fbBox.checked = record.facebookChecked; fbBox.disabled = !record.productChecked;
     fbCheck.appendChild(fbBox);
@@ -355,6 +361,10 @@
   $('epSearch').addEventListener('input', renderList);
   $('epExport').addEventListener('click', exportSummary);
   $('epBackup').addEventListener('click', exportBackup);
+  document.addEventListener('aff:edit-post:verified', event => {
+    const record = state.records.find(item => item.postUrl === event.detail?.postUrl && item.newLink === event.detail?.newLink);
+    if (record) message('Facebook ยืนยันการแก้' + (event.detail.kind === 'comment' ? 'คอมเมนต์' : 'ข้อความโพสต์') + 'แล้ว · เปิดโพสต์ตรวจอีกครั้งก่อนติ๊กสถานะ');
+  });
   $('epCloudSave').addEventListener('click', () => { clearTimeout(cloudTimer); cloudChain = cloudChain.then(() => persistCloud()).catch(error => cloudStatus('บันทึกบนคลาวด์ไม่สำเร็จ: ' + (error.message || error))); });
   $('epCloudLoad').addEventListener('click', () => loadCloud(true));
   $('epRecover').addEventListener('click', recoverLegacy);
