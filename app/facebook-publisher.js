@@ -155,6 +155,7 @@
     try{
       status('กำลังตรวจ API key ของ Upload-Post…');
       await api('configure-upload-post','POST',{apiKey});
+      await root.__affRefreshFacebookSetup?.();
       $('fpProviderKey').value='';
       await loadPages();
       status('เชื่อมระบบแล้ว กด “เชื่อม Facebook และดึงเพจ”');
@@ -169,6 +170,7 @@
     try{
       status('กำลังตรวจ App ID กับ Meta…');
       await api('configure','POST',{appId,appSecret});
+      await root.__affRefreshFacebookSetup?.();
       $('fpAppSecret').value='';
       status('ตั้งค่าแอปแล้ว กดเชื่อม Facebook เพื่อดึงเพจ');
       await loadPages();

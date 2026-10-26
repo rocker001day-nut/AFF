@@ -37,6 +37,7 @@
   }
   async function loginWithFacebook() {
     if (connecting) return;
+    await checkSetup();
     if (!ready) return label.textContent = 'เจ้าของเว็บต้องตั้งค่า Meta App หรือผู้ให้บริการโพสต์ก่อน';
     connecting = true;
     login.disabled = true;
@@ -63,6 +64,7 @@
     }
   }
   window.__affFacebookLogin = loginWithFacebook;
+  window.__affRefreshFacebookSetup = checkSetup;
   if (google) google.addEventListener('click', async () => {
     google.disabled = true;
     label.textContent = 'กำลังเปิด Google Login…';
