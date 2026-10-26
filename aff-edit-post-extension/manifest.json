@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "AFF Edit Post Assistant",
+  "version": "0.1.0",
+  "description": "ช่วยแก้ลิงก์ Shopee ในข้อความโพสต์หรือคอมเมนต์ Facebook ที่เปิดใน Chrome",
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://web.facebook.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://aff-lyart.vercel.app/*"
+      ],
+      "js": [
+        "aff-bridge.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://web.facebook.com/*"
+      ],
+      "js": [
+        "editor-core.js",
+        "facebook-helper.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
