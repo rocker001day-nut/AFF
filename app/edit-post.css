@@ -55,3 +55,6 @@ body.dark #editPostPage .ep-warning { color: #fcd34d; }
 #editPostPage .ep-actions a.btn { display: inline-flex; align-items: center; text-decoration: none; }
 @media (max-width: 900px) { #editPostPage .ep-workspace { grid-template-columns: minmax(0, 1fr); } #editPostPage .ep-list { max-height: 245px; } }
 @media (max-width: 600px) { #editPostPage .ep-hero { display: block; padding: 21px; } #editPostPage .ep-stage { display: inline-block; margin-top: 16px; } #editPostPage .ep-list-panel, #editPostPage .ep-detail-panel, #editPostPage .ep-upload { padding: 18px; } #editPostPage .ep-form { grid-template-columns: minmax(0, 1fr); } }
+
+#editPostPage .ep-cloud-status { margin: 0 0 12px; font-size: 12px; color: var(--muted); line-height: 1.5; }
+#editPostPage .ep-actions button { max-width: 100%; }
