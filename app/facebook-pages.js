@@ -32,7 +32,7 @@
       list.append(button);
     }
     if (!pages.length) list.textContent = 'ยังไม่พบเพจ';
-    status.textContent = pages.length ? (source === 'chrome' ? 'พบจากหน้า Facebook Pages ใน Chrome · เลือกเพจที่ต้องการ' : 'เพจที่ Facebook อนุญาตให้ AFF จัดการ') : '';
+    status.textContent = pages.length ? (source === 'chrome' ? 'พบจาก Chrome · ใช้ดูตัวอย่างเท่านั้น ต้องเชื่อม Facebook ด้านบนเพื่อโพสต์' : 'เพจที่ Facebook อนุญาตให้ AFF จัดการ') : '';
   }
 
   async function refreshPages() {
@@ -41,7 +41,7 @@
     if (current !== requestId || localPages) return;
     if (error || !data.session) {
       renderPages([], 'oauth');
-      list.textContent = 'กด “ค้นหาเพจจาก Chrome” เพื่อเริ่ม';
+      list.textContent = 'เข้าสู่ระบบ AFF ก่อน แล้วกด “เชื่อม Facebook และดึงเพจ”';
       return;
     }
     list.textContent = 'กำลังดึงรายชื่อเพจ…';
@@ -54,7 +54,7 @@
       if (current !== requestId || localPages) return;
       notice.hidden = !!result.oauthReady;
       renderPages(result.pages || [], 'oauth');
-      if (!result.pages?.length) list.textContent = result.oauthReady ? 'ยังไม่พบเพจที่อนุญาต ลองเชื่อม Facebook อีกครั้ง' : 'กดค้นหาเพจจาก Chrome หรือให้เจ้าของเว็บเปิด Facebook Login';
+      if (!result.pages?.length) list.textContent = result.oauthReady ? 'ยังไม่พบเพจที่อนุญาต ลองเชื่อม Facebook อีกครั้ง' : 'เจ้าของเว็บต้องเปิดการเชื่อม Facebook ก่อนจึงจะโพสต์ได้';
       if (result.syncError) status.textContent = result.syncError;
     } catch (error) {
       if (current === requestId && !localPages) { list.textContent = 'ยังดึงเพจไม่ได้'; status.textContent = error.message; }
