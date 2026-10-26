@@ -3830,13 +3830,13 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     </div>
     <div class="app-page" id="editPostPage" hidden>
       <section class="panel ep-hero">
-        <div><span class="ep-eyebrow">AFF WORKFLOW</span><h2>แก้ลิงก์โพสต์และเตรียม Ads</h2><p>เปิดไฟล์งาน เลือกรายการ แล้วไล่ตรวจทีละขั้น ข้อมูลคิวเก็บในเบราว์เซอร์เครื่องนี้</p></div>
+        <div><span class="ep-eyebrow">AFF WORKFLOW</span><h2>แก้ลิงก์โพสต์และเตรียม Ads</h2><p>เปิดไฟล์งาน เลือกรายการ แล้วไล่ตรวจทีละขั้น คิวงานเก็บตามบัญชี AFF และเปิดต่อได้จากอีกเครื่องหลังซิงก์</p></div>
         <span class="ep-stage">หน้าเตรียมงาน · ยังไม่สั่งแก้ Ads อัตโนมัติ</span>
       </section>
       <section class="panel ep-upload">
-        <div class="ep-heading"><div><span class="ep-step">01</span><h3>เปิดไฟล์ Excel งานแก้ลิงก์</h3></div><span id="epFileName">ยังไม่มีไฟล์งาน</span></div>
-        <div class="ep-upload-row"><label class="btn upload ep-file-button">เลือกไฟล์ .xlsx / .xls<input id="epFile" type="file" accept=".xlsx,.xls" hidden></label><button class="btn" type="button" id="epExport" disabled>ดาวน์โหลดสรุปงาน</button></div>
-        <p class="ep-hint">รองรับรูปแบบ AFF Edit Post: โพสต์อยู่คอลัมน์ B, ลิงก์สินค้าในแถวถัดไป และ Sub_id ในคอลัมน์ C · การเปิดไฟล์ใหม่จะแทนคิวในเครื่องนี้</p>
+        <div class="ep-heading"><div><span class="ep-step">01</span><h3>เปิดไฟล์งานแก้ลิงก์</h3></div><span id="epFileName">ยังไม่มีไฟล์งาน</span></div>
+        <div class="ep-upload-row"><label class="btn upload ep-file-button">เลือก Excel / .affedit<input id="epFile" type="file" accept=".xlsx,.xls,.affedit" hidden></label><button class="btn" type="button" id="epExport" disabled>ดาวน์โหลดสรุป Excel</button><button class="btn" type="button" id="epBackup" disabled>สำรองคิว .affedit</button><button class="btn" type="button" id="epCloudSave" disabled>บันทึกเข้าบัญชี</button><button class="btn" type="button" id="epCloudLoad" disabled>โหลดจากบัญชี</button><button class="btn" type="button" id="epRecover" hidden>กู้คิวเก่าในเครื่อง</button></div><p class="ep-cloud-status" id="epCloudStatus" role="status" aria-live="polite">กำลังตรวจบัญชี AFF…</p>
+        <p class="ep-hint">รองรับรูปแบบ AFF Edit Post: โพสต์อยู่คอลัมน์ B, ลิงก์สินค้าในแถวถัดไป และ Sub_id ในคอลัมน์ C · การเปิดไฟล์ใหม่จะถามก่อนแทนคิว และเก็บความคืบหน้าของโพสต์เดิมที่ตรงกัน · สำรองเป็น .affedit เพื่อย้ายงานได้</p>
         <p class="ep-message" id="epMessage" role="status" aria-live="polite">เลือกไฟล์เพื่อเริ่มงาน หรือเปิดคิวที่ทำค้างไว้ในเครื่องนี้</p>
       </section>
       <section class="ep-workspace" id="epWorkspace" hidden>
