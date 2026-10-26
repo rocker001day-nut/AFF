@@ -46,7 +46,7 @@
 
   const $ = id => document.getElementById(id);
   const state = { name: '', records: [], selectedId: '' };
-  let activeUserId = '', cloudTimer = 0, cloudChain = Promise.resolve();
+  let activeUserId = '', cloudTimer = 0, cloudChain = Promise.resolve(), pendingExtensionRequest = '';
 
   function cloudStatus(value) { $('epCloudStatus').textContent = value; }
   function queueKey() { return STORAGE_KEY + ':' + activeUserId; }
@@ -195,7 +195,7 @@
     const editor = addText(host, 'div', '', 'ep-section');
     addText(editor, 'h4', 'เตรียมลิงก์ใหม่');
     const form = addText(editor, 'div', '', 'ep-form');
-    let copyButton, productBox, fbBox, commentBox;
+    let copyButton, productBox, fbBox, commentBox, extensionButton;
     function field(name, value, key, wide = false) {
       const label = addText(form, 'label', name, wide ? 'ep-wide' : '');
       const input = document.createElement('input');
@@ -211,6 +211,7 @@
         if (productBox) { productBox.disabled = !linkReady; productBox.checked = record.productChecked; }
         if (fbBox) { fbBox.disabled = !record.productChecked; fbBox.checked = record.facebookChecked; }
         if (commentBox) { commentBox.disabled = !record.productChecked; commentBox.checked = record.commentChecked; }
+        if (extensionButton) extensionButton.disabled = !record.productChecked || !validShopee(record.oldLink) || !linkReady;
       });
     }
     field('Sub_id1 ใหม่', record.newSub1, 'newSub1');
@@ -242,6 +243,22 @@
       }
       document.querySelector('[data-page-target="facebook"]')?.click();
       message('เลือกเพจและโพสต์ให้ตรงรายการ แล้วกด “แก้ลิงก์ในข้อความ” · ระบบจะเติมลิงก์เดิมและใหม่ให้');
+    });
+    extensionButton = addText(fbActions, 'button', 'ให้ส่วนขยาย Chrome ช่วยแก้', 'btn upload');
+    extensionButton.type = 'button';
+    extensionButton.disabled = !record.productChecked || !validShopee(record.oldLink) || !validShopee(record.newLink) || record.oldLink === record.newLink;
+    extensionButton.addEventListener('click', () => {
+      const requestId = String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+      pendingExtensionRequest = requestId;
+      window.postMessage({ source: 'aff-edit-post', type: 'START_EXTENSION_EDIT', requestId,
+        task: { postUrl: record.postUrl, oldLink: record.oldLink, newLink: record.newLink, sequence: record.sequence } }, location.origin);
+      message('กำลังให้ส่วนขยายเปิดโพสต์ Facebook…');
+      setTimeout(() => {
+        if (pendingExtensionRequest === requestId) {
+          pendingExtensionRequest = '';
+          message('ไม่พบส่วนขยายใน Chrome นี้ · ติดตั้งจากปุ่มด้านบน แล้วรีเฟรชหน้า AFF', true);
+        }
+      }, 8000);
     });
     const fbCheck = addText(facebook, 'label', '', 'ep-check');
     fbBox = document.createElement('input'); fbBox.type = 'checkbox'; fbBox.checked = record.facebookChecked; fbBox.disabled = !record.productChecked;
@@ -365,10 +382,22 @@
     const record = state.records.find(item => item.postUrl === event.detail?.postUrl && item.newLink === event.detail?.newLink);
     if (record) message('Facebook ยืนยันการแก้' + (event.detail.kind === 'comment' ? 'คอมเมนต์' : 'ข้อความโพสต์') + 'แล้ว · เปิดโพสต์ตรวจอีกครั้งก่อนติ๊กสถานะ');
   });
+  window.addEventListener('message', event => {
+    if (event.source !== window || event.origin !== location.origin || event.data?.source !== 'aff-edit-post-extension') return;
+    if (event.data.type === 'EXTENSION_READY') {
+      $('epExtensionStatus').textContent = 'พบส่วนขยาย Chrome ในเครื่องนี้ · พร้อมเปิดโพสต์';
+    }
+    if (event.data.type === 'EDIT_STARTED' && event.data.requestId === pendingExtensionRequest) {
+      pendingExtensionRequest = '';
+      message(event.data.opened ? 'เปิดโพสต์ Facebook แล้ว · ตรวจเพจ จากนั้นเปิดช่องแก้ไขและใช้แผงช่วยเติมลิงก์'
+        : (event.data.error || 'ส่วนขยายเปิดโพสต์ไม่สำเร็จ'), !event.data.opened);
+    }
+  });
   $('epCloudSave').addEventListener('click', () => { clearTimeout(cloudTimer); cloudChain = cloudChain.then(() => persistCloud()).catch(error => cloudStatus('บันทึกบนคลาวด์ไม่สำเร็จ: ' + (error.message || error))); });
   $('epCloudLoad').addEventListener('click', () => loadCloud(true));
   $('epRecover').addEventListener('click', recoverLegacy);
   refreshControls();
+  window.postMessage({ source: 'aff-edit-post', type: 'PING_EXTENSION' }, location.origin);
   root.__affSupabaseClient?.auth.onAuthStateChange((_event, session) => setTimeout(() => activateUser(session?.user?.id || ''), 0));
   root.__affSupabaseClient?.auth.getUser().then(({ data, error }) => {
     if (error) return cloudStatus('ตรวจบัญชีไม่สำเร็จ: ' + error.message);
