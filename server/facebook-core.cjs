@@ -7,6 +7,22 @@ const ID = /^\d+(?:_\d+)?$/;
 class ApiError extends Error {
   constructor(status, code) { super(code); this.status = status; this.code = code; }
 }
+function validAffiliateLink(link) {
+  try {
+    const url = new URL(link);
+    return url.protocol === 'https:' && ['s.shopee.co.th', 'shopee.co.th', 'www.shopee.co.th'].includes(url.hostname)
+      && url.pathname.length > 1 && link.length <= 2048;
+  } catch { return false; }
+}
+function replaceAffiliateLink(before, oldLink, newLink) {
+  if (!validAffiliateLink(oldLink) || !validAffiliateLink(newLink) || oldLink === newLink)
+    throw new ApiError(400, 'INVALID_AFFILIATE_LINK');
+  if (!before.includes(oldLink)) throw new ApiError(409, 'OLD_LINK_NOT_FOUND');
+  if (before.split(oldLink).length !== 2) throw new ApiError(409, 'MULTIPLE_LINK_MATCHES');
+  const next = before.charAt(before.indexOf(oldLink) + oldLink.length);
+  if (next && /[a-zA-Z0-9/?#&=%_.-]/.test(next)) throw new ApiError(409, 'OLD_LINK_PARTIAL');
+  return before.replace(oldLink, newLink);
+}
 function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.now() } = {}) {
   function settings() {
     const missing = REQUIRED.filter(key => !env[key]);
@@ -82,10 +98,11 @@ function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.
       headers.Authorization = 'Bearer ' + token;
       params.set('appsecret_proof', crypto.createHmac('sha256', env.FB_APP_SECRET).update(token).digest('hex'));
     }
-    url.search = params.toString();
+    if (method === 'POST') headers['Content-Type'] = 'application/x-www-form-urlencoded';
+    else url.search = params.toString();
     let response, data;
     try {
-      response = await fetchImpl(url, { method, headers, signal: AbortSignal.timeout(12000) });
+      response = await fetchImpl(url, { method, headers, ...(method === 'POST' ? { body: params.toString() } : {}), signal: AbortSignal.timeout(12000) });
       data = await response.json();
     } catch { throw new ApiError(502, 'FACEBOOK_UNAVAILABLE'); }
     if (!response.ok || data.error) {
@@ -204,6 +221,30 @@ function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.
         }
         return json(res, 200, listed(data, value, page.id, action === 'posts' ? 'post' : 'comment', parent));
       }
+
+      if (action === 'preview-link' || action === 'apply-link') {
+        const value = session(req);
+        mutation(req, value, config);
+        const input = body(req);
+        if (!['post', 'comment'].includes(input.kind)) throw new ApiError(400, 'INVALID_BODY');
+        const pageId = requireId(input.pageId), itemId = requireId(input.id);
+        verifyTicket(value, input.ticket, pageId, itemId, input.kind);
+        const oldLink = String(input.oldLink || ''), newLink = String(input.newLink || '');
+        const page = await pageFor(value, pageId);
+        const current = await graph(itemId, page.access_token, { fields: 'id,message,from' });
+        if (current.id !== itemId || current.from?.id !== pageId) throw new ApiError(403, 'PAGE_ACCESS_DENIED');
+        const before = String(current.message || '');
+        const after = replaceAffiliateLink(before, oldLink, newLink);
+        const fingerprint = crypto.createHash('sha256').update(before).digest('hex');
+        const afterFingerprint = crypto.createHash('sha256').update(after).digest('hex');
+        if (action === 'preview-link') return json(res, 200, { id: itemId, before, after, fingerprint, afterFingerprint });
+        if (input.confirm !== true || input.fingerprint !== fingerprint || input.afterFingerprint !== afterFingerprint) throw new ApiError(409, 'POST_CHANGED');
+        const updated = await graph(itemId, page.access_token, { message: after }, 'POST');
+        if (updated.success !== true && updated.id !== itemId) throw new ApiError(502, 'FACEBOOK_ACTION_FAILED');
+        const verified = await graph(itemId, page.access_token, { fields: 'id,message' });
+        if (verified.message !== after) throw new ApiError(502, 'EDIT_NOT_VERIFIED');
+        return json(res, 200, { updated: true, id: itemId, message: after });
+      }
       if (action === 'delete') {
         mutation(req, value, config);
         const input = body(req);
@@ -225,4 +266,4 @@ function createHandler({ env = process.env, fetchImpl = fetch, now = () => Date.
     }
   };
 }
-module.exports = { createHandler };
+module.exports = { createHandler, replaceAffiliateLink };

@@ -3826,17 +3826,18 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <button class="btn fb-load-more" id="fbLoadMore" type="button" hidden>โหลดเพิ่มเติม</button>
         <div class="fb-results" id="fbResults" role="status" aria-live="polite" hidden></div>
       </section>
+      <dialog class="fb-delete-dialog" id="fbEditDialog"><h2>ตรวจลิงก์ก่อนแก้บน Facebook</h2><p id="fbEditContext"></p><label>ลิงก์ Shopee เดิม<input id="fbEditOld" type="url" autocomplete="off"></label><label>ลิงก์ Shopee ใหม่<input id="fbEditNew" type="url" autocomplete="off"></label><p>แก้เฉพาะข้อความโพสต์หรือคอมเมนต์ของเพจ ลิงก์ที่ฝังในภาพหรือพรีวิวเดิมอาจแก้ผ่าน API ไม่ได้</p><div class="fb-edit-preview" id="fbEditPreview">กดดูตัวอย่างก่อนแก้</div><div class="fb-dialog-actions"><button class="btn" id="fbEditCancel" type="button">ยกเลิก</button><button class="btn" id="fbEditCheck" type="button">ดูตัวอย่าง</button><button class="btn upload" id="fbEditConfirm" type="button" disabled>ยืนยันแก้ลิงก์</button></div></dialog>
       <dialog class="fb-delete-dialog" id="fbDeleteDialog"><form method="dialog"><h2>ลบรายการที่เลือก?</h2><p id="fbDeleteContext"></p><p>การลบจะนำรายการออกจาก Facebook จริง และอาจกู้คืนไม่ได้</p><ul id="fbDeleteList"></ul><div class="fb-dialog-actions"><button class="btn" id="fbCancelDelete" value="cancel">ยกเลิก</button><button class="btn danger" id="fbConfirmDelete" type="button">ยืนยันลบ</button></div></form></dialog>
     </div>
     <div class="app-page" id="editPostPage" hidden>
       <section class="panel ep-hero">
-        <div><span class="ep-eyebrow">AFF WORKFLOW</span><h2>แก้ลิงก์โพสต์และเตรียม Ads</h2><p>เปิดไฟล์งาน เลือกรายการ แล้วไล่ตรวจทีละขั้น ข้อมูลคิวเก็บในเบราว์เซอร์เครื่องนี้</p></div>
+        <div><span class="ep-eyebrow">AFF WORKFLOW</span><h2>แก้ลิงก์โพสต์และเตรียม Ads</h2><p>เปิดไฟล์งาน เลือกรายการ แล้วไล่ตรวจทีละขั้น คิวงานเก็บตามบัญชี AFF และเปิดต่อได้จากอีกเครื่องหลังซิงก์</p></div>
         <span class="ep-stage">หน้าเตรียมงาน · ยังไม่สั่งแก้ Ads อัตโนมัติ</span>
       </section>
       <section class="panel ep-upload">
-        <div class="ep-heading"><div><span class="ep-step">01</span><h3>เปิดไฟล์ Excel งานแก้ลิงก์</h3></div><span id="epFileName">ยังไม่มีไฟล์งาน</span></div>
-        <div class="ep-upload-row"><label class="btn upload ep-file-button">เลือกไฟล์ .xlsx / .xls<input id="epFile" type="file" accept=".xlsx,.xls" hidden></label><button class="btn" type="button" id="epExport" disabled>ดาวน์โหลดสรุปงาน</button></div>
-        <p class="ep-hint">รองรับรูปแบบ AFF Edit Post: โพสต์อยู่คอลัมน์ B, ลิงก์สินค้าในแถวถัดไป และ Sub_id ในคอลัมน์ C · การเปิดไฟล์ใหม่จะแทนคิวในเครื่องนี้</p>
+        <div class="ep-heading"><div><span class="ep-step">01</span><h3>เปิดไฟล์งานแก้ลิงก์</h3></div><span id="epFileName">ยังไม่มีไฟล์งาน</span></div>
+        <div class="ep-upload-row"><label class="btn upload ep-file-button">เลือก Excel / .affedit<input id="epFile" type="file" accept=".xlsx,.xls,.affedit" hidden></label><button class="btn" type="button" id="epExport" disabled>ดาวน์โหลดสรุป Excel</button><button class="btn" type="button" id="epBackup" disabled>สำรองคิว .affedit</button><button class="btn" type="button" id="epCloudSave" disabled>บันทึกเข้าบัญชี</button><button class="btn" type="button" id="epCloudLoad" disabled>โหลดจากบัญชี</button><button class="btn" type="button" id="epRecover" hidden>กู้คิวเก่าในเครื่อง</button></div><p class="ep-cloud-status" id="epCloudStatus" role="status" aria-live="polite">กำลังตรวจบัญชี AFF…</p>
+        <p class="ep-hint">รองรับรูปแบบ AFF Edit Post: โพสต์อยู่คอลัมน์ B, ลิงก์สินค้าในแถวถัดไป และ Sub_id ในคอลัมน์ C · การเปิดไฟล์ใหม่จะถามก่อนแทนคิว และเก็บความคืบหน้าของโพสต์เดิมที่ตรงกัน · สำรองเป็น .affedit เพื่อย้ายงานได้</p>
         <p class="ep-message" id="epMessage" role="status" aria-live="polite">เลือกไฟล์เพื่อเริ่มงาน หรือเปิดคิวที่ทำค้างไว้ในเครื่องนี้</p>
       </section>
       <section class="ep-workspace" id="epWorkspace" hidden>
@@ -8205,12 +8206,18 @@ function exportExcel() {
   'use strict';
   const $ = id => document.getElementById(id);
   if (!$('facebookPage')) return;
-  const state = { connected: false, csrf: '', pages: [], items: [], selected: new Set(), after: null, parent: null, busy: false, generation: 0, pending: [] };
+  const state = { connected: false, csrf: '', pages: [], items: [], selected: new Set(), after: null, parent: null, busy: false, generation: 0, pending: [], editItem: null, editPreview: null };
   const errors = {
     RECONNECT_FACEBOOK: 'การเชื่อมต่อหมดอายุ กรุณาเชื่อม Facebook ใหม่',
     FACEBOOK_PERMISSION_REQUIRED: 'Facebook ยังไม่อนุญาตการทำรายการนี้ ตรวจสิทธิ์เพจและสิทธิ์ของแอปแล้วเชื่อมใหม่',
     PAGE_ACCESS_DENIED: 'บัญชีนี้ไม่มีสิทธิ์จัดการเพจที่เลือก',
-    RELOAD_ITEMS: 'รายการหมดอายุ กรุณาโหลดรายการใหม่ก่อนลบ',
+    RELOAD_ITEMS: 'รายการหมดอายุ กรุณาโหลดรายการใหม่แล้วลองอีกครั้ง',
+    INVALID_AFFILIATE_LINK: 'ลิงก์เดิมและใหม่ต้องเป็น Shopee HTTPS ที่แตกต่างกัน',
+    OLD_LINK_NOT_FOUND: 'ไม่พบลิงก์เดิมในข้อความรายการนี้ อาจเป็นลิงก์ที่ฝังในภาพหรือพรีวิว',
+    OLD_LINK_PARTIAL: 'ลิงก์เดิมที่กรอกเป็นเพียงส่วนหนึ่งของลิงก์ในโพสต์ กรุณาคัดลอกให้ครบ',
+    MULTIPLE_LINK_MATCHES: 'พบลิงก์เดิมหลายจุดในข้อความ กรุณาตรวจบน Facebook ก่อนแก้',
+    POST_CHANGED: 'ข้อความบน Facebook เปลี่ยนระหว่างตรวจ กรุณาดูตัวอย่างใหม่',
+    EDIT_NOT_VERIFIED: 'ส่งคำสั่งแล้วแต่ยังตรวจยืนยันข้อความใหม่ไม่ได้ กรุณาเปิดดูบน Facebook',
     SETUP_REQUIRED: 'ยังตั้งค่าการเชื่อม Facebook ไม่ครบ เปิดวิธีเปิดใช้งานด้านล่าง',
     INVALID_DATE: 'ตรวจวันเริ่มต้นและวันสิ้นสุดอีกครั้ง',
     INVALID_LOGIN_STATE: 'การเข้าสู่ระบบไม่สมบูรณ์ กรุณากดเชื่อม Facebook ใหม่',
@@ -8291,6 +8298,8 @@ function exportExcel() {
           }
         } catch { /* Posts without a permalink can still be managed. */ }
       }
+      const edit = document.createElement('button'); edit.type = 'button'; edit.className = 'btn'; edit.textContent = 'แก้ลิงก์ในข้อความ'; edit.disabled = state.busy;
+      edit.addEventListener('click', () => openLinkEdit(item)); buttons.appendChild(edit);
       copy.append(meta, message, buttons);
       if (item.error) { const error = document.createElement('p'); error.className = 'fb-item-error'; error.textContent = item.error; copy.appendChild(error); }
       article.append(check, copy); container.appendChild(article);
@@ -8342,6 +8351,53 @@ function exportExcel() {
     } catch (error) { $('fbSetup').open = true; $('fbConnect').disabled = !configured; if (configured) $('fbConnect').hidden = false; status(error.message, true); }
     finally { busy(false); }
   }
+
+  function openLinkEdit(item) {
+    if (state.busy || !state.connected) return;
+    state.editItem = item; state.editPreview = null;
+    let draft = null;
+    try { draft = JSON.parse(sessionStorage.getItem('aff-edit-post-handoff-v1') || 'null'); } catch { /* Optional draft. */ }
+    const postUrl = state.parent?.url || item.url;
+    const same = draft && draft.postUrl === postUrl;
+    $('fbEditOld').value = same ? draft.oldLink || '' : '';
+    $('fbEditNew').value = same ? draft.newLink || '' : '';
+    $('fbEditContext').textContent = (state.parent ? 'คอมเมนต์' : 'โพสต์') + ' · ' + item.id + ' · เพจ ' + (state.pages.find(page => page.id === $('fbPageSelect').value)?.name || '');
+    $('fbEditPreview').textContent = 'กดดูตัวอย่างก่อนแก้';
+    $('fbEditConfirm').disabled = true;
+    $('fbEditDialog').showModal();
+  }
+  function linkPayload() {
+    return { pageId: $('fbPageSelect').value, id: state.editItem.id, kind: state.parent ? 'comment' : 'post',
+      ticket: state.editItem.ticket, oldLink: $('fbEditOld').value.trim(), newLink: $('fbEditNew').value.trim() };
+  }
+  async function previewLink() {
+    if (!state.editItem || state.busy) return;
+    const payload = linkPayload();
+    busy(true); $('fbEditPreview').textContent = 'กำลังตรวจข้อความล่าสุดบน Facebook…';
+    try {
+      state.editPreview = await api('preview-link', {}, payload);
+      $('fbEditPreview').textContent = 'ก่อนแก้:\n' + state.editPreview.before + '\n\nหลังแก้:\n' + state.editPreview.after;
+      $('fbEditConfirm').disabled = false;
+      status('ตรวจตัวอย่างแล้ว · กดยืนยันในหน้าต่างนี้เมื่อตรวจลิงก์ถูกต้อง');
+    } catch (error) { state.editPreview = null; $('fbEditPreview').textContent = error.message; status(error.message, true); }
+    finally { busy(false); }
+  }
+  async function applyLink() {
+    if (!state.editPreview || !state.editItem || state.busy) return;
+    const payload = { ...linkPayload(), fingerprint: state.editPreview.fingerprint, afterFingerprint: state.editPreview.afterFingerprint, confirm: true };
+    const kind = payload.kind, postUrl = state.parent?.url || state.editItem.url;
+    busy(true); $('fbEditConfirm').disabled = true;
+    try {
+      const result = await api('apply-link', {}, payload);
+      if (result.updated !== true || result.id !== payload.id) throw new Error(errors.EDIT_NOT_VERIFIED);
+      state.editItem.message = result.message;
+      document.dispatchEvent(new CustomEvent('aff:edit-post:verified', { detail: { postUrl, kind, newLink: payload.newLink } }));
+      $('fbEditDialog').close(); render();
+      status('Facebook ยืนยันข้อความใหม่แล้ว · ตรวจลิงก์บนหน้าโพสต์อีกครั้ง');
+    } catch (error) { $('fbEditPreview').textContent = error.message; status(error.message, true); }
+    finally { busy(false); }
+  }
+
   function openDelete() {
     if (state.busy || !state.selected.size) return;
     if (state.selected.size > 20) { status('ลบได้ครั้งละไม่เกิน 20 รายการ กรุณาลดจำนวนที่เลือก', true); return; }
@@ -8378,6 +8434,11 @@ function exportExcel() {
       status(failed || skipped ? 'บางรายการยังไม่ได้ลบ ตรวจผลด้านล่างและโหลดใหม่ก่อนลองอีกครั้ง' : 'ลบรายการที่เลือกสำเร็จแล้ว', Boolean(failed || skipped));
     }
   }
+  $('fbEditCancel').addEventListener('click', () => $('fbEditDialog').close());
+  $('fbEditCheck').addEventListener('click', previewLink);
+  $('fbEditConfirm').addEventListener('click', applyLink);
+  for (const id of ['fbEditOld','fbEditNew']) $(id).addEventListener('input', () => { state.editPreview = null; $('fbEditConfirm').disabled = true; $('fbEditPreview').textContent = 'ลิงก์เปลี่ยนแล้ว · กดดูตัวอย่างใหม่'; });
+  $('fbEditDialog').addEventListener('close', () => { state.editItem = null; state.editPreview = null; });
   $('fbConnect').addEventListener('click', () => { window.location.assign('/api/facebook?action=login'); });
   $('fbDisconnect').addEventListener('click', async () => { if (state.busy) return; busy(true); try { await api('disconnect', {}, {}); state.connected = false; } catch (error) { status(error.message, true); } finally { busy(false); } if (!state.connected) refreshConnection(); });
   $('fbPageSelect').addEventListener('change', () => { state.parent = null; loadItems(); });
