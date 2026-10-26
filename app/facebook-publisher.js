@@ -57,6 +57,8 @@
     $('fpPreviewLink').setAttribute('aria-disabled',String(!destination));
     const host=$('fpQueue');host.replaceChildren();
     const pages=selectedPages();let planned=[];
+    $('fpPublishNow').disabled=busy||!pages.length;
+    $('fpSchedule').disabled=busy||!pages.length;
     $('fpSelectedCount').textContent=pages.length+' จาก '+connectedPages.length+' เพจ';
     $('fpSelectAll').disabled=!connectedPages.length;
     $('fpClearPages').disabled=!pages.length;
@@ -101,8 +103,9 @@
       const data=await api('status');
       connectedPages=data.pages||[];
       $('fpProviderSetup').hidden=!data.canConfigure||data.oauthReady;
-      $('fpProviderSetup').open=!!data.canConfigure&&!data.oauthReady;
+      $('fpProviderSetup').open=false;
       $('fpAppSetup').hidden=!data.canConfigure||data.oauthReady;
+      $('fpAppSetup').open=!!data.canConfigure&&!data.oauthReady;
       $('fpConnectionMode').textContent=!data.oauthReady?'ยังไม่เปิดการเชื่อม · เจ้าของเว็บตั้งค่าหนึ่งครั้งด้านล่าง':data.provider==='upload-post'?'เชื่อมผ่าน Upload-Post · เลือกเพจใน Facebook ได้':'เชื่อมผ่าน Meta App ของ AFF';
       $('fpConnect').disabled=!data.oauthReady;
       $('fpConnect').title=data.oauthReady?'เชื่อมด้วยบัญชี Facebook ที่ล็อกอินในเบราว์เซอร์':'เจ้าของเว็บตั้งค่าการเชื่อม Facebook หนึ่งครั้งก่อน';
@@ -224,7 +227,7 @@
       status('เข้าคิว '+result.jobs.length+' เพจแล้ว · รอ Facebook ตอบรับและรีเฟรชผล');
       await loadJobs();
     }catch(error){status(error.message,true)}
-    finally{busy=false;$('fpPublishNow').disabled=false;$('fpSchedule').disabled=false}
+    finally{busy=false;render()}
   }
   $('fpImage').addEventListener('change',event=>{
     const file=event.target.files?.[0];
