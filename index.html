@@ -3156,7 +3156,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <div class="import-box revenue lazada">
           <span class="step-label">รายได้ 2</span>
           <h2>Lazada Affiliate</h2>
-          <p>นำเข้ารายได้ Lazada: ใช้วันที่จากคอลัมน์ B, ชื่อ SUP จาก AR และรวมยอดจาก W</p>
+          <p>นำเข้ารายได้ Lazada: ใช้วันที่จากคอลัมน์ B, ชื่อ SUP จาก AS (Sub ID 1) และรวมค่าคอมจาก W (Payout)</p>
           <input id="lazadaFile" type="file" accept=".xlsx,.xls,.csv">
           <button class="btn upload" id="confirmLazadaUpload" type="button">↑ ยืนยันอัปโหลด Lazada</button>
           <div class="import-status" id="lazadaStatus">ยังไม่ได้อัปโหลดไฟล์</div>
@@ -6987,7 +6987,33 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       });
     }
 
-    async function saveAffiliateGroupsByDate(platform, groupsByDate) {
+    function mergeLazadaImportRows(rows, groups, legacyGroups = []) {
+      const incomingNames = new Set(groups.map(group => normalizeSupName(group.supName)));
+      // Repair only a provable old AR metadata bucket from this same report.
+      // Preserve ad spend and never clear a real SUP or a mixed Shopee row.
+      for (const legacy of legacyGroups) {
+        const name = normalizeSupName(legacy.supName);
+        if (!['n', 'y'].includes(name) || incomingNames.has(name)) continue;
+        const row = rows.find(item => normalizeSupName(item.name) === name);
+        if (!row || Number(row.shopeeIncome || 0) !== 0 ||
+            Math.abs(Number(row.lazadaIncome || 0) - legacy.total) > 0.000001 ||
+            Number(row.orders || 0) !== legacy.orders) continue;
+        row.lazadaIncome = 0;
+        row.orders = 0;
+      }
+      for (const group of groups) {
+        const row = rows.find(item => normalizeSupName(item.name) === normalizeSupName(group.supName));
+        // Re-uploading the same SUP payout must not double its income or orders.
+        if (row && Math.abs(Number(row.lazadaIncome || 0) - group.total) < 0.000001) continue;
+        addOrMergeRowIntoList(rows, affiliateRowFromGroup('Lazada', group));
+      }
+      return rows.filter(row => {
+        row.platform = platformFromRow(row);
+        return Number(row.shopeeIncome || 0) !== 0 || Number(row.lazadaIncome || 0) !== 0 || Number(row.adCost || 0) !== 0;
+      });
+    }
+
+    async function saveAffiliateGroupsByDate(platform, groupsByDate, legacyGroupsByDate = new Map()) {
       const dates = [...groupsByDate.keys()].sort();
       let totalIncome = 0;
       let totalOrders = 0;
@@ -7001,7 +7027,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           totalOrders += Number(group.orders || 0);
           totalSupGroups += 1;
         });
-        const replacedRows = replaceAffiliatePlatformRows(rows, platform, groups);
+        const replacedRows = platform === 'Lazada'
+          ? mergeLazadaImportRows(rows, groups, legacyGroupsByDate.get(date) || [])
+          : replaceAffiliatePlatformRows(rows, platform, groups);
         await saveRowsForImportDate(date, replacedRows);
       }
 
@@ -7024,9 +7052,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           return;
         }
 
-        const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "B", "AR", "W");
-        if (!groupsByDate.size) throw new Error("ไม่พบยอดขายในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AR");
-        const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate);
+        const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "B", "AS", "W");
+        if (!groupsByDate.size) throw new Error("ไม่พบค่าคอมในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AS (Sub ID 1)");
+        const { groupsByDate: legacyGroupsByDate } = groupRowsByDateAndSup(rows, "B", "AR", "W");
+        const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate, legacyGroupsByDate);
         statusEl.textContent = `เพิ่ม Lazada แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
       } catch (error) {
         statusEl.textContent = error.message || "อ่านไฟล์ไม่สำเร็จ";
