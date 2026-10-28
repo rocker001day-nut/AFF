@@ -6295,6 +6295,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       return String(Math.round(number));
     }
 
+    function decimalNumberDisplay(value) {
+      const number = Number(value || 0);
+      return Number.isFinite(number) ? number.toFixed(2) : '0.00';
+    }
+
     async function copyTextToClipboard(text) {
       const value = String(text || "");
       if (navigator.clipboard && window.isSecureContext) {
@@ -6786,7 +6791,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
       ordersInput.value = numberValue(ordersInput) + Number(row.orders || 0);
       shopeeIncomeInput.value = wholeNumberDisplay(numberValue(shopeeIncomeInput) + Number(row.shopeeIncome || 0));
-      lazadaIncomeInput.value = wholeNumberDisplay(numberValue(lazadaIncomeInput) + Number(row.lazadaIncome || 0));
+      lazadaIncomeInput.value = decimalNumberDisplay(numberValue(lazadaIncomeInput) + Number(row.lazadaIncome || 0));
       adCostInput.value = wholeNumberDisplay(numberValue(adCostInput) + Number(row.adCost || 0));
       platformInput.value = platformFromRow({
         platform: mergedPlatform(platformInput.value, row.platform),
@@ -6987,6 +6992,21 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       });
     }
 
+    function groupLazadaRows(rows) {
+      const result = groupRowsByDateAndSup(rows, 'B', 'AS', 'W');
+      for (const [date, groups] of result.groupsByDate) {
+        const merged = new Map();
+        for (const group of groups) {
+          const key = normalizeSupName(group.supName);
+          if (!merged.has(key)) merged.set(key, { ...group, total: 0, orders: 0 });
+          merged.get(key).total += group.total;
+          merged.get(key).orders += group.orders;
+        }
+        result.groupsByDate.set(date, [...merged.values()].sort((a, b) => b.total - a.total));
+      }
+      return result;
+    }
+
     function mergeLazadaImportRows(rows, groups, legacyGroups = []) {
       const incomingNames = new Set(groups.map(group => normalizeSupName(group.supName)));
       // Repair only a provable old AR metadata bucket from this same report.
@@ -7003,9 +7023,14 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       }
       for (const group of groups) {
         const row = rows.find(item => normalizeSupName(item.name) === normalizeSupName(group.supName));
-        // Re-uploading the same SUP payout must not double its income or orders.
-        if (row && Math.abs(Number(row.lazadaIncome || 0) - group.total) < 0.000001) continue;
-        addOrMergeRowIntoList(rows, affiliateRowFromGroup('Lazada', group));
+        // A daily report replaces this SUP's Lazada payout, including a corrected report.
+        if (row) {
+          if (!Number(row.shopeeIncome || 0)) row.orders = group.orders;
+          else if (!Number(row.lazadaIncome || 0)) row.orders = Number(row.orders || 0) + group.orders;
+          row.lazadaIncome = group.total;
+        } else {
+          addOrMergeRowIntoList(rows, affiliateRowFromGroup('Lazada', group));
+        }
       }
       return rows.filter(row => {
         row.platform = platformFromRow(row);
@@ -7052,7 +7077,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           return;
         }
 
-        const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "B", "AS", "W");
+        const { groupsByDate, fallbackDateRows } = groupLazadaRows(rows);
         if (!groupsByDate.size) throw new Error("ไม่พบค่าคอมในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AS (Sub ID 1)");
         const { groupsByDate: legacyGroupsByDate } = groupRowsByDateAndSup(rows, "B", "AR", "W");
         const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate, legacyGroupsByDate);
@@ -7546,10 +7571,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       if (label) label.textContent = `รวมรายการที่แสดง (${viewModeLabel()}) ${totals.rows} แถว`;
       setTotal("orders", wholeNumberDisplay(totals.orders));
       setTotal("shopeeIncome", moneyWhole(totals.shopeeIncome));
-      setTotal("lazadaIncome", moneyWhole(totals.lazadaIncome));
+      setTotal("lazadaIncome", money(totals.lazadaIncome));
       setTotal("adCost", moneyWhole(totals.adCost));
-      setTotal("income", moneyWhole(totals.income));
-      setTotal("profit", moneyWhole(totals.profit), totalClass);
+      setTotal("income", money(totals.income));
+      setTotal("profit", money(totals.profit), totalClass);
       setTotal("roi", percent(roi), totalClass);
       setTotal("roas", wholeNumberDisplay(roas));
       setTotal("cpa", moneyWhole(cpa));
@@ -7636,8 +7661,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           if (result.profit > 0) winners += 1;
         }
 
-        tr.querySelector("[data-result='income']").textContent = moneyWhole(result.income);
-        tr.querySelector("[data-result='profit']").textContent = moneyWhole(result.profit);
+        tr.querySelector("[data-result='income']").textContent = money(result.income);
+        tr.querySelector("[data-result='profit']").textContent = money(result.profit);
         tr.querySelector("[data-result='profit']").className = `result ${result.profit >= 0 ? "good" : "bad"}`;
         tr.querySelector("[data-result='roi']").textContent = percent(result.roi);
         tr.querySelector("[data-result='roas']").textContent = wholeNumberDisplay(result.roas);
@@ -7654,9 +7679,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       applySearchFilter();
 
       const totalRoi = totalCost > 0 ? totalProfit / totalCost * 100 : 0;
-      document.getElementById("sumProfit").textContent = moneyWhole(totalProfit);
+      document.getElementById("sumProfit").textContent = money(totalProfit);
       document.getElementById("sumProfit").className = totalProfit >= 0 ? "good" : "bad";
-      document.getElementById("sumIncome").textContent = moneyWhole(totalIncome);
+      document.getElementById("sumIncome").textContent = money(totalIncome);
       document.getElementById("sumAds").textContent = moneyWhole(totalAds);
       document.getElementById("sumRoi").textContent = percent(totalRoi);
       document.getElementById("sumRoi").className = totalRoi >= 0 ? "good" : "bad";
@@ -7719,7 +7744,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <td class="aff-product-cell" data-label="Product / Campaign"><span title="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName)}">${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName) || "-"}</span></td>
         <td data-label="ออเดอร์"><input name="orders" type="number" inputmode="numeric" min="0" step="1" value="${row.orders || 0}"></td>
         <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.shopeeIncome)}"></td>
-        <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.lazadaIncome)}"></td>
+        <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="decimal" step="0.01" value="${decimalNumberDisplay(row.lazadaIncome)}"></td>
         <td class="ad-cost-cell" data-label="ค่าแอด"><input class="ad-cost-input" name="adCost" type="number" inputmode="numeric" min="0" step="1" value="${wholeNumberDisplay(row.adCost)}"></td>
         <td class="result" data-label="รายได้รวม" data-result="income">฿0.00</td>
         <td class="result" data-label="กำไรสุทธิ" data-result="profit">฿0.00</td>
@@ -7740,7 +7765,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       tr.querySelector("[data-aff-select]").addEventListener("change", () => updateAll());
       ["shopeeIncome", "lazadaIncome", "adCost"].forEach((fieldName) => {
         tr.querySelector(`[name="${fieldName}"]`).addEventListener("blur", (event) => {
-          event.target.value = wholeNumberDisplay(event.target.value);
+          event.target.value = fieldName === 'lazadaIncome' ? decimalNumberDisplay(event.target.value) : wholeNumberDisplay(event.target.value);
           updateAll({ reorder: true, persist: true });
         });
       });
