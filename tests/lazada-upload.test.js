@@ -46,6 +46,27 @@ test('groups payouts by SUP and day, with a separate bucket for blank AS', () =>
   assert.equal(fallbackDateRows, 1);
 });
 
+test('case variants of a SUP merge before saving and corrected payouts replace old amounts', () => {
+  const result = context.groupLazadaRows([reportRow('Stanley', 300.12), reportRow('STANLEY', 20.34)]);
+  const groups = result.groupsByDate.get('2026-10-27');
+  assert.equal(groups.length, 1);
+  assert.equal(groups[0].total, 320.46);
+  const rows = [{ name: 'stanley', lazadaIncome: 640, shopeeIncome: 0, orders: 8, adCost: 20 }];
+  const saved = context.mergeLazadaImportRows(rows, groups);
+  assert.equal(saved[0].lazadaIncome, 320.46);
+  assert.equal(saved[0].orders, 2);
+  assert.equal(saved[0].adCost, 20);
+  assert.equal(context.mergeLazadaImportRows(saved, groups)[0].lazadaIncome, 320.46);
+});
+
+test('Lazada input values retain cents instead of rounding each SUP before aggregation', () => {
+  const displaySource = part('    function decimalNumberDisplay(', '    async function copyTextToClipboard(');
+  vm.runInContext(displaySource, context);
+  assert.equal(context.decimalNumberDisplay(2175.78), '2175.78');
+  assert.equal(context.decimalNumberDisplay(2160.86), '2160.86');
+  assert.match(html, /name="lazadaIncome"[^>]+step="0.01"[^>]+decimalNumberDisplay\(row.lazadaIncome\)/);
+});
+
 test('repairs the exact old N bucket, keeps ads and Shopee, and re-upload is idempotent', () => {
   const groups = [{ supName: 'A', total: 15, orders: 2 }, { supName: 'B', total: 20, orders: 1 }];
   const legacy = [{ supName: 'N', total: 35, orders: 3 }];
