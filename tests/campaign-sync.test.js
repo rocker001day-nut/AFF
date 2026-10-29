@@ -20,7 +20,7 @@ function extract(name) {
   return source.slice(start, next < 0 ? source.length : start + 1 + next);
 }
 function context(names, values) {
-  const ctx = vm.createContext({ console: {error() {}}, ...values });
+  const ctx = vm.createContext({ console: {error() {}, warn() {}}, activeCampaignImportOwner: null, ...values });
   vm.runInContext(names.map(extract).join('\n'), ctx);
   return ctx;
 }
@@ -117,4 +117,93 @@ test('auth callback schedules database work after returning to Supabase', () => 
   vm.runInContext(callbackSource,ctx);
   assert.equal(callback('TOKEN_REFRESHED',{user:{id:'a'}}),undefined);
   assert.equal(scheduled.length,1);
+});
+
+function uploadContext(overrides = {}) {
+  const file = { name: 'report-28.xlsx' };
+  const record = { id: 'a:Shopee', ownerId: 'a', revision: 'r1', file };
+  const marker = { file, ownerId: 'a', record, promise: Promise.resolve(record) };
+  const elements = {};
+  const retained = new Map([[record.id, record]]);
+  const values = {
+    currentUser: {id:'a'}, pendingShopeeFile: file, pendingLazadaFile:null, pendingFacebookAdsFile:null,
+    campaignUploadActive:false, activeCampaignImportOwner:null,
+    campaignUploadControls: {Shopee:{input:'shopeeFile',button:'confirmShopeeUpload'}},
+    rememberedCampaignUploads:new Map([['Shopee',marker]]),
+    document:{getElementById:id=>elements[id]||(elements[id]={disabled:false,value:'selected'})},
+    campaignImportStore:{remove:async id=>retained.delete(id)},
+    requireCampaignCloudSession:async()=> 'a',
+    assertCampaignOwner:id=>assert.equal(id,'a'),
+    ensureSelectedSingleDateLoaded:async()=>{}, flushCampaignOutbox:async()=>true,
+    ...overrides
+  };
+  const ctx=context(['pendingCampaignFile','setPendingCampaignFile','runRememberedCampaignImport'],values);
+  return {ctx,file,record,retained,elements};
+}
+test('failed cloud upload keeps the selected file and durable file record', async () => {
+  const h=uploadContext();const status={};const result=await h.ctx.runRememberedCampaignImport('Shopee',h.file,status,async()=>{throw Error('offline');});
+  assert.equal(result,false);assert.equal(h.ctx.pendingShopeeFile,h.file);
+  assert.equal(h.retained.size,1);assert.match(status.textContent,/ไม่ต้องเลือกใหม่/);
+});
+test('verified upload clears the retained file only after cloud confirmation', async () => {
+  const h=uploadContext();const status={};
+  const result=await h.ctx.runRememberedCampaignImport('Shopee',h.file,status,async()=>({dates:['2026-10-28']}));
+  assert.equal(result,true);assert.equal(h.ctx.pendingShopeeFile,null);assert.equal(h.retained.size,0);
+});
+test('selecting a new file while uploading does not clear the new selection', async () => {
+  const h=uploadContext();const next={name:'next.xlsx'};const status={};
+  const result=await h.ctx.runRememberedCampaignImport('Shopee',h.file,status,async()=>{h.ctx.pendingShopeeFile=next;return{dates:['2026-10-28']};});
+  assert.equal(result,true);assert.equal(h.ctx.pendingShopeeFile,next);
+});
+test('a remembered file bound to another account cannot be imported', async () => {
+  const h=uploadContext({requireCampaignCloudSession:async()=> 'b'});const status={};let calls=0;
+  const result=await h.ctx.runRememberedCampaignImport('Shopee',h.file,status,async()=>{calls++;return{};});
+  assert.equal(result,false);assert.equal(calls,0);assert.equal(h.retained.size,1);assert.match(status.textContent,/บัญชีเดิม/);
+});
+test('an import does not claim success when its verified save remains queued', async () => {
+  const h=uploadContext({flushCampaignOutbox:async()=>false});const status={};
+  assert.equal(await h.ctx.runRememberedCampaignImport('Shopee',h.file,status,async()=>({dates:['2026-10-28']})),false);
+  assert.equal(h.retained.size,1);assert.equal(h.ctx.pendingShopeeFile,h.file);
+});
+test('signed-out imports retain guest rows but explicitly reject cloud success', async () => {
+  let retained;const ctx=context(['saveRowsForImportDate'],{
+    currentUser:null,normalizeCampaignRow:x=>x,readDailyStore:()=>({}),storeCampaignBackup(){},
+    setLocalRowsForDate:(date,rows)=>{retained=rows;},showCampaignSyncStatus(){}
+  });
+  await assert.rejects(ctx.saveRowsForImportDate('2026-10-28',[{v:28}]),/ยังไม่ขึ้นคลาวด์/);
+  assert.equal(retained[0].v,28);
+});
+test('session is resolved immediately before import, even before initialization finishes', async () => {
+  let user;const ctx=context(['requireCampaignCloudSession'],{
+    currentUser:null,supabaseClient:{auth:{getSession:async()=>({data:{session:{user:{id:'a'}}},error:null})}},
+    setAuthUi:value=>{user=value;},showCampaignSyncStatus(){}
+  });
+  assert.equal(await ctx.requireCampaignCloudSession(),'a');assert.equal(user.id,'a');
+});
+test('invalid files propagate failure so the upload handler retains the file', async () => {
+  const ctx=context(['importAffiliateFile'],{readUploadRows:async()=>[]});
+  await assert.rejects(ctx.importAffiliateFile('Shopee',{name:'bad.xlsx'},{}),/ไม่พบข้อมูล/);
+});
+test('retrying the same Facebook daily report replaces spend rather than doubling it', async () => {
+  let saved=[{name:'SUP',adCost:40,shopeeIncome:100}];
+  const ctx=context(['saveFacebookAdsGroupsByDate'],{
+    loadRowsForImportDate:async()=>saved.map(x=>({...x})),
+    normalizeSupName:s=>s.toLowerCase(),facebookAdsRowFromGroup:g=>({name:g.supName,adCost:g.adCost}),
+    saveRowsForImportDate:async(date,rows)=>{saved=rows;},showImportedDateView(){},loadCurrentView:async()=>{}
+  });
+  const groups=new Map([['2026-10-28',[{supName:'SUP',adCost:50}]]]);
+  await ctx.saveFacebookAdsGroupsByDate(groups);await ctx.saveFacebookAdsGroupsByDate(groups);
+  assert.equal(saved[0].adCost,50);assert.equal(saved[0].shopeeIncome,100);
+});
+
+test('retrying Shopee report replaces matching SUP income and keeps Lazada and ads', () => {
+  const ctx=context(['replaceAffiliatePlatformRows'],{
+    normalizeSupName:s=>s.toLowerCase(),platformFromRow:()=> 'Shopee + Lazada',
+    addOrMergeRowIntoList:(rows,row)=>rows.push(row),affiliateRowFromGroup:(platform,g)=>({name:g.supName,orders:g.orders,shopeeIncome:g.total,lazadaIncome:0,adCost:0})
+  });
+  let rows=[{name:'SUP',orders:3,shopeeIncome:50,lazadaIncome:20,adCost:45}];
+  const groups=[{supName:'sup',total:60,orders:2}];
+  rows=ctx.replaceAffiliatePlatformRows(rows,'Shopee',groups);
+  rows=ctx.replaceAffiliatePlatformRows(rows,'Shopee',groups);
+  assert.equal(rows.length,1);assert.equal(rows[0].shopeeIncome,60);assert.equal(rows[0].lazadaIncome,20);assert.equal(rows[0].adCost,45);
 });

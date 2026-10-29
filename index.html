@@ -3941,6 +3941,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app/campaign-sync.js?v=20261029-1"></script>
+  <script src="app/campaign-import-store.js?v=20261029-2"></script>
   <script>
     const rowsEl = document.getElementById("campaignRows");
     const campaignTotalsRow = document.getElementById("campaignTotalsRow");
@@ -4054,6 +4055,15 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     let pendingShopeeFile = null;
     let pendingLazadaFile = null;
     let pendingFacebookAdsFile = null;
+    const campaignImportStore = AffCampaignImportStore.create({ indexedDB: window.indexedDB });
+    const rememberedCampaignUploads = new Map();
+    let activeCampaignImportOwner = null;
+    let campaignUploadActive = false;
+    const campaignUploadControls = {
+      Shopee: { input: "shopeeFile", button: "confirmShopeeUpload", status: "shopeeStatus" },
+      Lazada: { input: "lazadaFile", button: "confirmLazadaUpload", status: "lazadaStatus" },
+      Facebook: { input: "facebookAdsFile", button: "confirmFacebookAdsUpload", status: "facebookAdsStatus" }
+    };
     let searchQuery = "";
     let pendingConfirmAction = null;
     let isRangeView = false;
@@ -6688,7 +6698,125 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       }
     }
 
+    function pendingCampaignFile(platform) {
+      return platform === "Shopee" ? pendingShopeeFile : platform === "Lazada" ? pendingLazadaFile : pendingFacebookAdsFile;
+    }
+
+    function setPendingCampaignFile(platform, file) {
+      if (platform === "Shopee") pendingShopeeFile = file;
+      else if (platform === "Lazada") pendingLazadaFile = file;
+      else pendingFacebookAdsFile = file;
+    }
+
+    function rememberCampaignFile(platform, file, statusEl) {
+      const marker = { file, ownerId: currentUser?.id || null, record: null, promise: null };
+      rememberedCampaignUploads.set(platform, marker);
+      marker.promise = campaignImportStore.put(platform, file, marker.ownerId).then(record => {
+        marker.record = record;
+        if (rememberedCampaignUploads.get(platform) === marker) statusEl.textContent = "จำไฟล์แล้ว: " + file.name + " · กดยืนยันอัปโหลดเพื่อส่งขึ้นคลาวด์";
+        return record;
+      }).catch(error => {
+        if (rememberedCampaignUploads.get(platform) === marker) {
+          statusEl.textContent = "ยังจำไฟล์ไม่ได้ กรุณาเก็บไฟล์ต้นฉบับไว้: " + (error.message || error);
+          statusEl.className = "import-status bad";
+        }
+        throw error;
+      });
+      // Selection handlers do not await; the confirm handler checks this same promise.
+      marker.promise.catch(() => {});
+      return marker;
+    }
+
+    async function restoreRememberedCampaignFiles() {
+      const ownerId = currentUser?.id || null;
+      try {
+        for (const [platform, marker] of rememberedCampaignUploads) {
+          if (marker.ownerId && marker.ownerId !== ownerId) {
+            rememberedCampaignUploads.delete(platform);
+            setPendingCampaignFile(platform, null);
+            document.getElementById(campaignUploadControls[platform].input).value = "";
+          }
+        }
+        const records = await campaignImportStore.list(ownerId);
+        if ((currentUser?.id || null) !== ownerId) return;
+        for (const record of records) {
+          if (!campaignUploadControls[record.platform] || pendingCampaignFile(record.platform)) continue;
+          setPendingCampaignFile(record.platform, record.file);
+          rememberedCampaignUploads.set(record.platform, {
+            file: record.file, ownerId: record.ownerId, record, promise: Promise.resolve(record)
+          });
+          const statusEl = document.getElementById(campaignUploadControls[record.platform].status);
+          statusEl.className = "import-status";
+          statusEl.textContent = "จำไฟล์เดิมไว้แล้ว: " + record.file.name + " · กดยืนยันอัปโหลดต่อได้ ไม่ต้องเลือกไฟล์ใหม่";
+        }
+      } catch (error) {
+        setCampaignSyncStatus("อ่านไฟล์ที่จำไว้ไม่สำเร็จ: " + (error.message || error));
+      }
+    }
+
+    async function requireCampaignCloudSession() {
+      const { data, error } = await supabaseClient.auth.getSession();
+      if (error) throw error;
+      const user = data?.session?.user || null;
+      setAuthUi(user);
+      if (!user) {
+        showCampaignSyncStatus();
+        throw Error("กรุณาเข้าสู่ระบบ Google ก่อนส่งยอดขึ้นคลาวด์");
+      }
+      return user.id;
+    }
+
+    async function runRememberedCampaignImport(platform, file, statusEl, importAction) {
+      if (campaignUploadActive) {
+        statusEl.textContent = "กำลังบันทึกไฟล์ก่อนหน้า กรุณารอสักครู่";
+        return false;
+      }
+      campaignUploadActive = true;
+      Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = true; });
+      let retained = false;
+      try {
+        let marker = rememberedCampaignUploads.get(platform);
+        if (!marker || marker.file !== file) marker = rememberCampaignFile(platform, file, statusEl);
+        let record = await marker.promise;
+        retained = true;
+        statusEl.textContent = "จำไฟล์แล้ว · กำลังตรวจบัญชีก่อนบันทึกขึ้นคลาวด์…";
+        const ownerId = await requireCampaignCloudSession();
+        if (marker.ownerId && marker.ownerId !== ownerId) throw Error("ไฟล์นี้รอส่งเข้าบัญชีเดิม กรุณาเข้าสู่ระบบบัญชีที่เลือกไฟล์ไว้");
+        if (!marker.ownerId) {
+          const claimed = await campaignImportStore.put(platform, file, ownerId);
+          await campaignImportStore.remove(record.id, record.revision);
+          marker.ownerId = ownerId;
+          marker.record = claimed;
+          marker.promise = Promise.resolve(claimed);
+          record = claimed;
+        }
+        activeCampaignImportOwner = ownerId;
+        await ensureSelectedSingleDateLoaded();
+        const result = await importAction();
+        assertCampaignOwner(ownerId);
+        if (!result || !await flushCampaignOutbox()) throw Error("ยังยืนยันยอดบนคลาวด์ไม่ได้ เก็บไฟล์และคิวไว้ส่งซ้ำแล้ว");
+        try { await campaignImportStore.remove(record.id, record.revision); }
+        catch (error) { console.warn("Cloud saved; upload backup retained", error); }
+        if (pendingCampaignFile(platform) === file) {
+          setPendingCampaignFile(platform, null);
+          document.getElementById(campaignUploadControls[platform].input).value = "";
+          if (rememberedCampaignUploads.get(platform) === marker) rememberedCampaignUploads.delete(platform);
+        }
+        statusEl.className = "import-status";
+        return true;
+      } catch (error) {
+        statusEl.textContent = (error.message || error) + (retained ? " · จำไฟล์ไว้แล้ว ไม่ต้องเลือกใหม่" : "");
+        statusEl.className = "import-status bad";
+        return false;
+      } finally {
+        activeCampaignImportOwner = null;
+        campaignUploadActive = false;
+        Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = false; });
+      }
+    }
+
     async function loadRowsForImportDate(date) {
+      if (activeCampaignImportOwner) assertCampaignOwner(activeCampaignImportOwner);
       if (!isRangeView && date === selectedDate) return getRowsFromDom().map(normalizeCampaignRow);
       const store = readDailyStore();
       const localRows = Array.isArray(store[date]) ? store[date] : [];
@@ -6699,6 +6827,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function saveRowsForImportDate(date, rows) {
+      if (activeCampaignImportOwner) assertCampaignOwner(activeCampaignImportOwner);
       const normalizedRows = rows.map(normalizeCampaignRow);
       const ownerId = currentUser?.id;
       if (!ownerId) {
@@ -6706,7 +6835,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         storeCampaignBackup(date, Array.isArray(store[date]) ? store[date] : [], "ก่อนนำเข้าไฟล์ทับข้อมูลในเครื่อง");
         setLocalRowsForDate(date, normalizedRows);
         showCampaignSyncStatus();
-        return;
+        throw Error("จำข้อมูลไว้ในเครื่องแล้ว แต่ยังไม่ขึ้นคลาวด์ กรุณาเข้าสู่ระบบ Google");
       }
       campaignSync.enqueue(ownerId, date, normalizedRows);
       if (!await flushCampaignOutbox()) throw Error("นำเข้าไว้ในคิวแล้ว แต่ยังไม่ขึ้นคลาวด์ กดซิงก์ตอนนี้เมื่อเชื่อมต่อได้");
@@ -6810,7 +6939,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         groups.forEach((group) => {
           totalAds += Number(group.adCost || 0);
           totalSupGroups += 1;
-          addOrMergeRowIntoList(rows, facebookAdsRowFromGroup(group));
+          const existing = rows.find(row => normalizeSupName(row.name) === normalizeSupName(group.supName));
+          // A daily report replaces this SUP's spend so retrying a retained file cannot double it.
+          if (existing) existing.adCost = Number(group.adCost || 0);
+          else rows.push(facebookAdsRowFromGroup(group));
         });
         await saveRowsForImportDate(date, rows);
       }
@@ -7016,10 +7148,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         if (!groupsByDate.size) throw new Error("ไม่พบวันที่จากคอลัมน์ A, SUP จากคอลัมน์ C หรือไม่พบยอดค่าแอด");
 
         const result = await saveFacebookAdsGroupsByDate(groupsByDate);
-        statusEl.textContent = `เพิ่มค่าแอด Facebook แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมค่าแอด ${money(result.totalAds)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ A ไม่ถูกต้อง)` : ""}`;
+        statusEl.textContent = `บันทึกค่าแอด Facebook บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมค่าแอด ${money(result.totalAds)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ A ไม่ถูกต้อง)` : ""}`;
+        return result;
       } catch (error) {
         statusEl.textContent = error.message || "อ่านไฟล์ค่าแอดไม่สำเร็จ";
         statusEl.className = "import-status bad";
+        throw error;
       }
     }
 
@@ -7045,15 +7179,29 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function replaceAffiliatePlatformRows(rows, platform, groups) {
-      groups.forEach((group) => {
-        addOrMergeRowIntoList(rows, affiliateRowFromGroup(platform, group));
-      });
-
-      return rows.filter((row) => {
+      const incoming = new Map();
+      for (const group of groups) {
+        const key = normalizeSupName(group.supName);
+        if (!incoming.has(key)) incoming.set(key, { ...group, total: 0, orders: 0 });
+        incoming.get(key).total += group.total;
+        incoming.get(key).orders += group.orders;
+      }
+      for (const group of incoming.values()) {
+        const existing = rows.find(row => normalizeSupName(row.name) === normalizeSupName(group.supName));
+        if (!existing) {
+          addOrMergeRowIntoList(rows, affiliateRowFromGroup(platform, group));
+          continue;
+        }
+        const field = platform === "Shopee" ? "shopeeIncome" : "lazadaIncome";
+        const other = platform === "Shopee" ? "lazadaIncome" : "shopeeIncome";
+        if (!Number(existing[other] || 0)) existing.orders = group.orders;
+        else if (!Number(existing[field] || 0)) existing.orders = Number(existing.orders || 0) + group.orders;
+        // Re-importing a remembered daily report replaces this SUP's amount.
+        existing[field] = group.total;
+      }
+      return rows.filter(row => {
         row.platform = platformFromRow(row);
-        return Number(row.shopeeIncome || 0) !== 0 ||
-          Number(row.lazadaIncome || 0) !== 0 ||
-          Number(row.adCost || 0) !== 0;
+        return Number(row.shopeeIncome || 0) !== 0 || Number(row.lazadaIncome || 0) !== 0 || Number(row.adCost || 0) !== 0;
       });
     }
 
@@ -7138,18 +7286,20 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "D", "AQ", "AE", "Live สด");
           if (!groupsByDate.size) throw new Error("ไม่พบรายได้ในคอลัมน์ AE สำหรับจัดกลุ่มตาม SUP AQ");
           const result = await saveAffiliateGroupsByDate("Shopee", groupsByDate);
-          statusEl.textContent = `เพิ่ม Shopee แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ AE ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ D ไม่ถูกต้อง)` : ""}`;
-          return;
+          statusEl.textContent = `บันทึก Shopee บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ AE ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ D ไม่ถูกต้อง)` : ""}`;
+          return result;
         }
 
         const { groupsByDate, fallbackDateRows } = groupLazadaRows(rows);
         if (!groupsByDate.size) throw new Error("ไม่พบค่าคอมในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AS (Sub ID 1)");
         const { groupsByDate: legacyGroupsByDate } = groupRowsByDateAndSup(rows, "B", "AR", "W");
         const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate, legacyGroupsByDate);
-        statusEl.textContent = `เพิ่ม Lazada แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
+        statusEl.textContent = `บันทึก Lazada บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
+        return result;
       } catch (error) {
         statusEl.textContent = error.message || "อ่านไฟล์ไม่สำเร็จ";
         statusEl.className = "import-status bad";
+        throw error;
       }
     }
 
@@ -8148,6 +8298,7 @@ function exportExcel() {
       const statusEl = document.getElementById("shopeeStatus");
       statusEl.className = "import-status";
       statusEl.textContent = pendingShopeeFile ? `เลือกไฟล์แล้ว: ${pendingShopeeFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+      if (pendingShopeeFile) rememberCampaignFile("Shopee", pendingShopeeFile, statusEl);
     });
 
     document.getElementById("confirmShopeeUpload").addEventListener("click", () => {
@@ -8158,10 +8309,8 @@ function exportExcel() {
         return;
       }
       askConfirm("ยืนยันอัปโหลด Shopee", `ต้องการนำเข้าไฟล์ ${pendingShopeeFile.name} หรือไม่`, async () => {
-        await ensureSelectedSingleDateLoaded();
-        await importAffiliateFile("Shopee", pendingShopeeFile, statusEl);
-        pendingShopeeFile = null;
-        document.getElementById("shopeeFile").value = "";
+        const file = pendingShopeeFile;
+        await runRememberedCampaignImport("Shopee", file, statusEl, () => importAffiliateFile("Shopee", file, statusEl));
       });
     });
 
@@ -8170,6 +8319,7 @@ function exportExcel() {
       const statusEl = document.getElementById("lazadaStatus");
       statusEl.className = "import-status";
       statusEl.textContent = pendingLazadaFile ? `เลือกไฟล์แล้ว: ${pendingLazadaFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+      if (pendingLazadaFile) rememberCampaignFile("Lazada", pendingLazadaFile, statusEl);
     });
 
     document.getElementById("confirmLazadaUpload").addEventListener("click", () => {
@@ -8180,10 +8330,8 @@ function exportExcel() {
         return;
       }
       askConfirm("ยืนยันอัปโหลด Lazada", `ต้องการนำเข้าไฟล์ ${pendingLazadaFile.name} หรือไม่`, async () => {
-        await ensureSelectedSingleDateLoaded();
-        await importAffiliateFile("Lazada", pendingLazadaFile, statusEl);
-        pendingLazadaFile = null;
-        document.getElementById("lazadaFile").value = "";
+        const file = pendingLazadaFile;
+        await runRememberedCampaignImport("Lazada", file, statusEl, () => importAffiliateFile("Lazada", file, statusEl));
       });
     });
 
@@ -8192,6 +8340,7 @@ function exportExcel() {
       const statusEl = document.getElementById("facebookAdsStatus");
       statusEl.className = "import-status";
       statusEl.textContent = pendingFacebookAdsFile ? `เลือกไฟล์แล้ว: ${pendingFacebookAdsFile.name}` : "ยังไม่ได้อัปโหลดไฟล์";
+      if (pendingFacebookAdsFile) rememberCampaignFile("Facebook", pendingFacebookAdsFile, statusEl);
     });
 
     document.getElementById("confirmFacebookAdsUpload").addEventListener("click", () => {
@@ -8202,10 +8351,8 @@ function exportExcel() {
         return;
       }
       askConfirm("ยืนยันอัปโหลด Facebook Ads", `ต้องการนำเข้าไฟล์ ${pendingFacebookAdsFile.name} หรือไม่`, async () => {
-        await ensureSelectedSingleDateLoaded();
-        await importFacebookAdsFile(pendingFacebookAdsFile, statusEl);
-        pendingFacebookAdsFile = null;
-        document.getElementById("facebookAdsFile").value = "";
+        const file = pendingFacebookAdsFile;
+        await runRememberedCampaignImport("Facebook", file, statusEl, () => importFacebookAdsFile(file, statusEl));
       });
     });
 
@@ -8235,6 +8382,8 @@ function exportExcel() {
     });
 
     async function initApp() {
+      // Restore unsubmitted files before waiting for network/auth work.
+      restoreRememberedCampaignFiles();
       applyTheme(localStorage.getItem(themeStorageKey) || "light");
       updateViewModeButtons();
       const savedView = readSavedView();
@@ -8255,6 +8404,7 @@ function exportExcel() {
         if (error) throw error;
         const sessionUser = data.session ? data.session.user : null;
         setAuthUi(sessionUser);
+        await restoreRememberedCampaignFiles();
         if (sessionUser) {
           try {
             await migrateLocalRowsToSupabase();
@@ -8287,6 +8437,7 @@ function exportExcel() {
         // Release the Supabase auth lock before making database requests.
         setTimeout(async () => {
         if ((currentUser?.id || null) !== nextUserId) return;
+        await restoreRememberedCampaignFiles();
         if (nextUserId && nextUserId !== previousUserId) {
           try {
             await migrateLocalRowsToSupabase();
