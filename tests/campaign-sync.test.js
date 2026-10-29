@@ -20,7 +20,7 @@ function extract(name) {
   return source.slice(start, next < 0 ? source.length : start + 1 + next);
 }
 function context(names, values) {
-  const ctx = vm.createContext({ console: {error() {}, warn() {}}, activeCampaignImportOwner: null, ...values });
+  const ctx = vm.createContext({ console: {error() {}, warn() {}}, activeCampaignImportOwner: null, updateEditState(){}, restoreCampaignView:async()=>{}, loadCurrentView:async()=>{}, cacheVerifiedCampaignRows:async()=>{}, eachDateInRange:(start,end)=>start===end?[start]:[start,end], ...values });
   vm.runInContext(names.map(extract).join('\n'), ctx);
   return ctx;
 }
@@ -194,6 +194,24 @@ test('retrying the same Facebook daily report replaces spend rather than doublin
   const groups=new Map([['2026-10-28',[{supName:'SUP',adCost:50}]]]);
   await ctx.saveFacebookAdsGroupsByDate(groups);await ctx.saveFacebookAdsGroupsByDate(groups);
   assert.equal(saved[0].adCost,50);assert.equal(saved[0].shopeeIncome,100);
+});
+
+test('a save acknowledged during a read cannot render or cache the old server snapshot', async () => {
+  let remote = [{name:'SUP',shopeeIncome:100}];
+  const h=setup(async(date,rows)=>{remote=rows;});
+  let release;
+  const gate=new Promise(resolve=>{release=resolve;});
+  let reads=0;const cached=[];
+  const ctx=context(['fetchCampaignRows'],{
+    currentUser:{id:'a'},campaignSync:h.queue,assertCampaignOwner(){},
+    cacheVerifiedCampaignRows:async(owner,date,rows)=>cached.push(rows[0].shopeeIncome),
+    findCampaignRecord:async()=>{const snapshot=JSON.parse(JSON.stringify(remote));if(++reads===1)await gate;return{data:snapshot};}
+  });
+  const read=ctx.fetchCampaignRows('2026-10-28');
+  h.queue.enqueue('a','2026-10-28',[{name:'SUP',shopeeIncome:200}]);
+  await h.queue.flush('a');release();
+  assert.equal((await read)[0].shopeeIncome,200);
+  assert.equal(reads,2);assert.deepEqual(cached,[200]);
 });
 
 test('retrying Shopee report replaces matching SUP income and keeps Lazada and ads', () => {

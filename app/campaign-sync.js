@@ -5,6 +5,7 @@
     const { storage, activeOwner, write } = options;
     const prefix = options.prefix || "affiliate-campaign-outbox-v1:";
     const flights = new Map();
+    const versions = new Map();
     let sequence = 0;
     function read(owner) {
       const raw = storage.getItem(prefix + owner);
@@ -23,8 +24,10 @@
       const entry = { date, rows: JSON.parse(JSON.stringify(rows)), revision: Date.now() + "-" + (++sequence) + "-" + Math.random().toString(36).slice(2) };
       entries[date] = entry;
       persist(owner, entries);
+      versions.set(owner, version(owner) + 1);
       return entry;
     }
+    function version(owner) { return versions.get(owner) || 0; }
     function pending(owner, date) {
       const entry = owner ? read(owner)[date] : null;
       return entry && Array.isArray(entry.rows) ? JSON.parse(JSON.stringify(entry)) : null;
@@ -40,6 +43,7 @@
           const entry = list(owner)[0];
           if (!entry) return;
           await write(entry.date, entry.rows, owner);
+          versions.set(owner, version(owner) + 1);
           const entries = read(owner);
           // An older request must never remove a newer edit or another tab's edit.
           if (entries[entry.date]?.revision === entry.revision) {
@@ -51,7 +55,7 @@
       flights.set(owner, flight);
       return flight.finally(() => { if (flights.get(owner) === flight) flights.delete(owner); });
     }
-    return { enqueue, pending, list, flush };
+    return { enqueue, pending, list, flush, version };
   }
   if (typeof module === "object" && module.exports) module.exports = { create };
   else root.AffCampaignSync = { create };
