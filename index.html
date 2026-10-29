@@ -1,4 +1,4 @@
-﻿<!doctype html>
+<!doctype html>
 <html lang="th">
 <head>
   <meta charset="utf-8">
@@ -3940,8 +3940,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="app/campaign-sync.js?v=20261029-1"></script>
+  <script src="app/campaign-sync.js?v=20261029-3"></script>
   <script src="app/campaign-import-store.js?v=20261029-2"></script>
+  <script src="app/campaign-view-store.js?v=20261029-3"></script>
   <script>
     const rowsEl = document.getElementById("campaignRows");
     const campaignTotalsRow = document.getElementById("campaignTotalsRow");
@@ -4050,6 +4051,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     window.__affSupabaseClient = supabaseClient;
     let selectedDate = todayDate();
     let isLoadingRows = false;
+    let loadedCampaignView = null;
+    const campaignViewStore = AffCampaignViewStore.create({ indexedDB: window.indexedDB });
+    let campaignRefreshActive = false;
+    let campaignViewChoiceRevision = 0;
+    let campaignViewReadFailed = false;
     let campaignSyncRetryTimer = null;
     let tableSort = { key: "", direction: "desc" };
     let pendingShopeeFile = null;
@@ -5974,15 +5980,37 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
     function readSavedView() {
       try {
-        const view = JSON.parse(localStorage.getItem(viewStorageKey) || "null");
-        return view && view.startDate ? view : null;
+        const key = viewStorageKey + ":" + (currentUser?.id || "guest");
+        const view = JSON.parse(localStorage.getItem(key) || (!currentUser && localStorage.getItem(viewStorageKey)) || "null");
+        return view && /^\d{4}-\d{2}-\d{2}$/.test(view.startDate) && /^\d{4}-\d{2}-\d{2}$/.test(view.endDate || view.startDate) ? view : null;
       } catch {
         return null;
       }
     }
 
     function saveCurrentView(startDate = dateInput.value || selectedDate, endDate = rangeEndInput.value || startDate) {
-      safeSetLocalStorage(viewStorageKey, JSON.stringify({ startDate, endDate }));
+      safeSetLocalStorage(viewStorageKey + ":" + (currentUser?.id || "guest"), JSON.stringify({ startDate, endDate }));
+    }
+
+    async function restoreCampaignView() {
+      const ownerId = currentUser?.id || null;
+      const choiceRevision = campaignViewChoiceRevision;
+      let view = readSavedView();
+      if (!view && ownerId) {
+        try {
+          const { data, error } = await supabaseClient.from("campaign_data").select("record_date, data")
+            .eq("user_id", ownerId).gte("record_date", "2000-01-01").lte("record_date", todayDate())
+            .order("record_date", { ascending: false }).limit(30);
+          if (error) throw error;
+          const latest = (data || []).find(record => Array.isArray(record.data) && record.data.length);
+          const pendingDate = campaignSync.list(ownerId).filter(entry => entry.rows.length).map(entry => entry.date).sort().pop();
+          const date = [latest?.record_date, pendingDate].filter(Boolean).sort().pop();
+          if (date) view = { startDate: date, endDate: date };
+        } catch (error) { console.warn("Cannot discover latest saved campaign date", error); }
+      }
+      if ((currentUser?.id || null) !== ownerId || campaignViewChoiceRevision !== choiceRevision) return;
+      dateInput.value = view?.startDate || todayDate();
+      rangeEndInput.value = view?.endDate || dateInput.value;
     }
 
     async function loadCurrentView() {
@@ -5993,7 +6021,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function updateEditState() {
-      const isReadOnly = isRangeView;
+      const isReadOnly = isRangeView || isLoadingRows || campaignUploadActive || campaignViewReadFailed;
       document.body.classList.toggle("range-view-active", isReadOnly);
       const addButton = document.getElementById("addRow");
       const resetButton = document.getElementById("resetRows");
@@ -6003,7 +6031,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         addButton.title = isReadOnly ? "มุมมองหลายวันเพิ่มแคมเปญไม่ได้ กรุณาเลือกวันเดียวก่อน" : "";
       }
       if (resetButton) {
-        resetButton.disabled = false;
+        resetButton.disabled = isLoadingRows || campaignUploadActive || campaignViewReadFailed;
         resetButton.title = isReadOnly ? "ล้างข้อมูลทุกวันในช่วงวันที่ที่เลือก" : "";
       }
       if (restoreButton) {
@@ -6025,7 +6053,15 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function setAuthUi(user) {
-      if ((currentUser?.id || null) !== (user?.id || null)) latestLoadToken += 1;
+      if ((currentUser?.id || null) !== (user?.id || null)) {
+        latestLoadToken += 1;
+        loadedCampaignView = null;
+        isLoadingRows = true;
+        rowsEl.innerHTML = "";
+        currentChartRowsByDate = [];
+        updateAll();
+        updateEditState();
+      }
       currentUser = user;
       const authCard = document.getElementById("authCard");
       document.getElementById("loginGoogleBtn").hidden = Boolean(user);
@@ -6085,6 +6121,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       if (!saved || campaignDataFingerprint(saved.data) !== campaignDataFingerprint(rows)) {
         throw Error("ยังยืนยันยอดบนคลาวด์ไม่ได้ เก็บคิวไว้ส่งซ้ำแล้ว");
       }
+      if (Array.isArray(rows)) await cacheVerifiedCampaignRows(ownerId, date, rows);
     }
 
     async function deleteCampaignRows(date, ownerId = currentUser?.id) {
@@ -6096,6 +6133,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         .eq("user_id", ownerId).eq("record_date", date);
       if (error) throw error;
       if (await findCampaignRecord(date, ownerId)) throw Error("ยังยืนยันการล้างข้อมูลบนคลาวด์ไม่ได้");
+      await cacheVerifiedCampaignRows(ownerId, date, []);
+    }
+
+    async function cacheVerifiedCampaignRows(ownerId, date, rows) {
+      try { await campaignViewStore.put(ownerId, date, rows); }
+      catch (error) { console.warn("Cloud data is saved; offline copy unavailable", error); }
     }
 
     async function deleteCampaignRowsRange(startDate, endDate) {
@@ -6119,14 +6162,22 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       const ownerId = currentUser?.id;
       const pending = campaignSync.pending(ownerId, date);
       if (pending) return pending.rows;
+      const version = campaignSync.version(ownerId);
       const existing = await findCampaignRecord(date, ownerId);
+      if (version !== campaignSync.version(ownerId)) return fetchCampaignRows(date);
       const latest = campaignSync.pending(ownerId, date);
-      return latest ? latest.rows : existing && Array.isArray(existing.data) ? existing.data : [];
+      if (latest) return latest.rows;
+      const rows = existing && Array.isArray(existing.data) ? existing.data : [];
+      await cacheVerifiedCampaignRows(ownerId, date, rows);
+      assertCampaignOwner(ownerId);
+      if (version !== campaignSync.version(ownerId)) return fetchCampaignRows(date);
+      return campaignSync.pending(ownerId, date)?.rows || rows;
     }
 
     async function fetchCampaignRecordsRange(startDate, endDate) {
       const ownerId = currentUser?.id;
       if (!ownerId) return [];
+      const version = campaignSync.version(ownerId);
       const { data, error } = await supabaseClient
         .from("campaign_data")
         .select("record_date, data, created_at")
@@ -6137,10 +6188,15 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         .order("created_at", { ascending: false });
       if (error) throw error;
       assertCampaignOwner(ownerId);
+      if (version !== campaignSync.version(ownerId)) return fetchCampaignRecordsRange(startDate, endDate);
       const latestByDate = new Map();
       (data || []).forEach((record) => {
         if (!latestByDate.has(record.record_date)) latestByDate.set(record.record_date, record);
       });
+      await Promise.all(eachDateInRange(startDate, endDate).map(date =>
+        cacheVerifiedCampaignRows(ownerId, date, Array.isArray(latestByDate.get(date)?.data) ? latestByDate.get(date).data : [])));
+      assertCampaignOwner(ownerId);
+      if (version !== campaignSync.version(ownerId)) return fetchCampaignRecordsRange(startDate, endDate);
       campaignSync.list(ownerId).forEach(entry => {
         if (entry.date >= startDate && entry.date <= endDate) latestByDate.set(entry.date, { record_date: entry.date, data: entry.rows });
       });
@@ -6222,6 +6278,21 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       } catch (error) {
         setCampaignSyncStatus("ยังซิงก์ไม่สำเร็จ · ข้อมูลในเครื่องยังอยู่: " + (error.message || error));
       }
+    }
+
+    async function refreshCampaignView() {
+      if (!currentUser || campaignRefreshActive || isLoadingRows || campaignUploadActive || document.hidden) return;
+      const editing = () => rowsEl.contains(document.activeElement) && document.activeElement?.matches("input, select, textarea");
+      if (editing() || (loadedCampaignView && !campaignViewReadFailed && (dateInput.value !== loadedCampaignView.startDate || rangeEndInput.value !== loadedCampaignView.endDate))) return;
+      const ownerId = currentUser.id;
+      const choiceRevision = campaignViewChoiceRevision;
+      campaignRefreshActive = true;
+      try {
+        if (!await flushCampaignOutbox()) return;
+        if (currentUser?.id !== ownerId || choiceRevision !== campaignViewChoiceRevision || editing() || campaignUploadActive || isLoadingRows) return;
+        await loadCurrentView();
+      } catch (error) { console.warn("Automatic campaign refresh failed", error); }
+      finally { campaignRefreshActive = false; }
     }
 
     async function saveAppModuleToSupabase(recordDate, moduleName, value) {
@@ -6758,7 +6829,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       const { data, error } = await supabaseClient.auth.getSession();
       if (error) throw error;
       const user = data?.session?.user || null;
+      const previousOwner = currentUser?.id || null;
       setAuthUi(user);
+      if (previousOwner !== (user?.id || null)) {
+        await restoreCampaignView();
+        await loadCurrentView();
+      }
       if (!user) {
         showCampaignSyncStatus();
         throw Error("กรุณาเข้าสู่ระบบ Google ก่อนส่งยอดขึ้นคลาวด์");
@@ -6772,6 +6848,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         return false;
       }
       campaignUploadActive = true;
+      updateEditState();
       Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = true; });
       let retained = false;
       try {
@@ -6811,16 +6888,16 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       } finally {
         activeCampaignImportOwner = null;
         campaignUploadActive = false;
+        updateEditState();
         Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = false; });
       }
     }
 
     async function loadRowsForImportDate(date) {
       if (activeCampaignImportOwner) assertCampaignOwner(activeCampaignImportOwner);
-      if (!isRangeView && date === selectedDate) return getRowsFromDom().map(normalizeCampaignRow);
       const store = readDailyStore();
       const localRows = Array.isArray(store[date]) ? store[date] : [];
-      if (!currentUser) return localRows.map(normalizeCampaignRow);
+      if (!currentUser) return (!isRangeView && date === selectedDate ? getRowsFromDom() : localRows).map(normalizeCampaignRow);
       const remoteRows = await fetchCampaignRows(date);
       setLocalRowsForDate(date, remoteRows);
       return remoteRows.map(normalizeCampaignRow);
@@ -6959,6 +7036,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
     function showImportedDateView(dates) {
       if (!dates.length) return;
+      campaignViewChoiceRevision += 1;
       const startDate = dates[0];
       currentViewMode = "all";
       safeSetLocalStorage(viewModeStorageKey, currentViewMode);
@@ -7464,7 +7542,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function saveRows(dateToSave = selectedDate, rowsToSave = null) {
-      if (isLoadingRows || isRangeView || !dateToSave) return;
+      if (isLoadingRows || isRangeView || campaignViewReadFailed || !dateToSave) return;
       const rows = (rowsToSave || getRowsFromDom()).map(normalizeCampaignRow);
       try {
         const ownerId = currentUser?.id;
@@ -7513,112 +7591,96 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function loadRowsForDate(date) {
-      const loadToken = ++latestLoadToken;
-      isRangeView = false;
-      selectedDate = date;
-      let rows = [];
-      let loadedFromSupabase = false;
-      try {
-        const store = readDailyStore();
-        const localRows = Array.isArray(store[date]) ? store[date] : [];
-        if (currentUser) {
-          const remoteRows = await fetchCampaignRows(date);
-          rows = remoteRows;
-          loadedFromSupabase = !campaignSync.pending(currentUser.id, date);
-          setLocalRowsForDate(date, rows);
-        } else {
-          rows = localRows;
-        }
-      } catch (error) {
-        console.error(error);
-        const store = readDailyStore();
-        rows = currentUser ? (campaignSync.pending(currentUser.id, date)?.rows || []) : (Array.isArray(store[date]) ? store[date] : []);
-        loadedFromSupabase = false;
-        if (saveStatusEl) saveStatusEl.textContent = `โหลด Supabase ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน: ${error.message || error}`;
-      }
-      if (loadToken !== latestLoadToken) return;
-      saveCurrentView(date, date);
-      currentChartRowsByDate = [{ date, rows }];
-      isLoadingRows = true;
-      rowsEl.innerHTML = "";
-      rows.forEach(addRow);
-      updateAll();
-      isLoadingRows = false;
-      keepLiveFirst();
-      applySearchFilter();
-      renderCurrentChart();
-      updateEditState();
-      if (saveStatusEl) {
-        if (rows.length) {
-          saveStatusEl.textContent = `${loadedFromSupabase ? "โหลดจาก Supabase" : "โหลดจากเครื่อง"} วันที่ ${date} (${rows.length} แถว)`;
-        } else {
-          saveStatusEl.textContent = `วันที่ ${date} ยังไม่มีข้อมูล`;
-        }
-      }
+      return loadCampaignView(date, date);
     }
 
     async function loadRowsForDateRange(startDate, endDate) {
-      const loadToken = ++latestLoadToken;
-      selectedDate = startDate;
+      return loadCampaignView(startDate, endDate);
+    }
+
+    async function loadCampaignView(startDate, endDate) {
       const dates = eachDateInRange(startDate, endDate);
-      if (!dates.length) {
-        saveStatusEl.textContent = "ช่วงวันที่ไม่ถูกต้อง";
-        return;
-      }
-      let allRows = [];
-      let chartRowsByDate = [];
-      try {
-        const store = readDailyStore();
-        const localRowsByDate = new Map(dates.map((date) => [date, Array.isArray(store[date]) ? store[date] : []]));
-        const localRows = dates.flatMap((date) => localRowsByDate.get(date));
-        chartRowsByDate = dates.map((date) => ({ date, rows: localRowsByDate.get(date) }));
-        if (currentUser) {
-          const records = await fetchCampaignRecordsRange(startDate, endDate);
-          const remoteRowsByDate = new Map(dates.map((date) => [date, []]));
-          records.forEach((record) => {
-            if (Array.isArray(record.data)) remoteRowsByDate.set(record.record_date, record.data);
-          });
-          const rowsByDate = remoteRowsByDate;
-          dates.forEach((date) => setLocalRowsForDate(date, rowsByDate.get(date) || []));
-          allRows = dates.flatMap((date) => rowsByDate.get(date) || []);
-          chartRowsByDate = dates.map((date) => ({ date, rows: rowsByDate.get(date) || [] }));
-        } else {
-          allRows = localRows;
-        }
-      } catch (error) {
-        console.error(error);
-        const store = readDailyStore();
-        const localRowsByDate = new Map(dates.map((date) => [date, currentUser ? (campaignSync.pending(currentUser.id, date)?.rows || []) : (Array.isArray(store[date]) ? store[date] : [])]));
-        allRows = dates.flatMap((date) => localRowsByDate.get(date));
-        chartRowsByDate = dates.map((date) => ({ date, rows: localRowsByDate.get(date) }));
-        saveStatusEl.textContent = allRows.length
-          ? `โหลดช่วงวันที่จาก Supabase ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน: ${error.message || error}`
-          : `โหลดช่วงวันที่จาก Supabase ไม่สำเร็จ: ${error.message || error}`;
-      }
-      if (loadToken !== latestLoadToken) return;
-      saveCurrentView(startDate, endDate);
-      currentChartRowsByDate = chartRowsByDate;
-      const mergedRows = mergeRowsForRange(allRows);
-      isRangeView = true;
+      if (!dates.length) { saveStatusEl.textContent = "ช่วงวันที่ไม่ถูกต้อง"; return false; }
+      const loadToken = ++latestLoadToken;
+      const ownerId = currentUser?.id || null;
+      const previousView = loadedCampaignView;
+      const previousRows = currentChartRowsByDate;
       isLoadingRows = true;
-      rowsEl.innerHTML = "";
-      mergedRows.forEach(addRow);
-      updateAll();
-      isLoadingRows = false;
-      keepLiveFirst();
-      applySearchFilter();
-      renderCurrentChart();
       updateEditState();
-      saveStatusEl.textContent = mergedRows.length
-        ? `ดูยอดรวม ${startDate} ถึง ${endDate} (${mergedRows.length} SUP จาก ${dates.length} วัน)`
-        : `ช่วง ${startDate} ถึง ${endDate} ยังไม่มีข้อมูล`;
+      saveStatusEl.textContent = "กำลังเรียกยอดที่บันทึกไว้…";
+      let chartRowsByDate;
+      let readError = null;
+      try {
+        try {
+          if (ownerId) {
+            if (dates.length === 1) chartRowsByDate = [{ date: startDate, rows: await fetchCampaignRows(startDate) }];
+            else {
+              const records = await fetchCampaignRecordsRange(startDate, endDate);
+              const byDate = new Map(records.filter(record => Array.isArray(record.data)).map(record => [record.record_date, record.data]));
+              chartRowsByDate = dates.map(date => ({ date, rows: byDate.get(date) || [] }));
+            }
+          } else {
+            const store = readDailyStore();
+            chartRowsByDate = dates.map(date => ({ date, rows: Array.isArray(store[date]) ? store[date] : [] }));
+          }
+        } catch (error) {
+          readError = error;
+          const cached = await Promise.all(dates.map(async date => {
+            const pending = campaignSync.pending(ownerId, date);
+            if (pending) return { date, rows: pending.rows };
+            try {
+              const record = ownerId ? await campaignViewStore.get(ownerId, date) : null;
+              return record ? { date, rows: record.rows } : null;
+            } catch (_) { return null; }
+          }));
+          if (cached.every(Boolean)) chartRowsByDate = cached;
+          else if (previousView?.ownerId === ownerId) {
+            // Keep the known view if another date cannot be read. Never turn a network error into an empty editable day.
+            chartRowsByDate = previousRows;
+            startDate = previousView.startDate;
+            endDate = previousView.endDate;
+          } else chartRowsByDate = [];
+        }
+        if (loadToken !== latestLoadToken || (currentUser?.id || null) !== ownerId) return false;
+        selectedDate = startDate;
+        isRangeView = startDate !== endDate;
+        campaignViewReadFailed = Boolean(readError);
+        dateInput.value = startDate;
+        rangeEndInput.value = endDate;
+        if (chartRowsByDate.length) {
+          loadedCampaignView = { ownerId, startDate, endDate };
+          saveCurrentView(startDate, endDate);
+        }
+        const unchanged = previousView?.ownerId === ownerId && previousView.startDate === startDate && previousView.endDate === endDate
+          && campaignDataFingerprint(previousRows) === campaignDataFingerprint(chartRowsByDate);
+        currentChartRowsByDate = chartRowsByDate;
+        const allRows = chartRowsByDate.flatMap(item => item.rows);
+        const rows = isRangeView ? mergeRowsForRange(allRows) : allRows;
+        if (!unchanged) {
+          rowsEl.innerHTML = "";
+          rows.forEach(addRow);
+          updateAll();
+          keepLiveFirst();
+          applySearchFilter();
+          renderCurrentChart();
+        }
+        if (readError) saveStatusEl.textContent = "โหลดคลาวด์ไม่สำเร็จ · " + (rows.length ? "ยังแสดงยอดที่จำไว้ อ่านอย่างเดียวจนเชื่อมต่อได้: " : "ยังยืนยันยอดวันนี้ไม่ได้: ") + (readError.message || readError);
+        else if (isRangeView) saveStatusEl.textContent = `ดูยอดรวม ${startDate} ถึง ${endDate} (${rows.length} SUP จาก ${dates.length} วัน)`;
+        else saveStatusEl.textContent = rows.length ? `${ownerId ? "โหลดจาก Supabase" : "โหลดจากเครื่อง"} วันที่ ${startDate} (${rows.length} แถว)` : `วันที่ ${startDate} ยังไม่มีข้อมูล`;
+        return !readError;
+      } finally {
+        if (loadToken === latestLoadToken) {
+          isLoadingRows = false;
+          updateEditState();
+        }
+      }
     }
 
     async function ensureSelectedSingleDateLoaded() {
       const targetDate = dateInput.value || selectedDate || todayDate();
-      if (isRangeView || selectedDate !== targetDate || rangeEndInput.value !== targetDate) {
+      if (isLoadingRows || campaignViewReadFailed || !loadedCampaignView || isRangeView || selectedDate !== targetDate || rangeEndInput.value !== targetDate) {
         rangeEndInput.value = targetDate;
-        await loadRowsForDate(targetDate);
+        if (!await loadRowsForDate(targetDate)) throw Error("ยังโหลดวันสำหรับแก้ไขไม่สำเร็จ กรุณาลองเชื่อมต่อใหม่");
       }
       return targetDate;
     }
@@ -8102,20 +8164,20 @@ function exportExcel() {
       });
     });
 
-    dateInput.addEventListener("change", (event) => {
+    dateInput.addEventListener("change", async (event) => {
+      campaignViewChoiceRevision += 1;
       const nextDate = event.target.value || todayDate();
       rangeEndInput.value = nextDate;
       saveCurrentView(nextDate, nextDate);
-      saveStatusEl.textContent = `เลือกวันที่ ${nextDate} แล้ว กดตกลงเพื่อแสดงผล`;
+      await loadRowsForDate(nextDate);
     });
 
-    rangeEndInput.addEventListener("change", () => {
+    rangeEndInput.addEventListener("change", async () => {
+      campaignViewChoiceRevision += 1;
       const startDate = dateInput.value || selectedDate || todayDate();
       const endDate = rangeEndInput.value || startDate;
       saveCurrentView(startDate, endDate);
-      saveStatusEl.textContent = startDate === endDate
-        ? `เลือกวันที่ ${startDate} แล้ว กดค้นหาเพื่อแสดงผล`
-        : `เลือกช่วง ${startDate} ถึง ${endDate} แล้ว กดค้นหาเพื่อแสดงผล`;
+      await loadCurrentView();
     });
 
     liveAdsStartInput.addEventListener("change", () => {
@@ -8129,6 +8191,7 @@ function exportExcel() {
     });
 
     document.getElementById("showDateRange").addEventListener("click", async () => {
+      campaignViewChoiceRevision += 1;
       const startDate = dateInput.value || selectedDate;
       const endDate = rangeEndInput.value || startDate;
       saveCurrentView(startDate, endDate);
@@ -8420,14 +8483,17 @@ function exportExcel() {
       }
 
       await flushCampaignOutbox();
+      await restoreCampaignView();
       await loadCurrentView();
       showCampaignSyncStatus();
       document.getElementById("syncCampaignNow").addEventListener("click", syncCampaignNow);
-      window.addEventListener("online", syncCampaignNow);
-      window.addEventListener("focus", () => { if (currentUser) flushCampaignOutbox(); });
+      window.addEventListener("online", refreshCampaignView);
+      window.addEventListener("focus", refreshCampaignView);
+      document.addEventListener("visibilitychange", () => { if (!document.hidden) refreshCampaignView(); });
       campaignSyncRetryTimer = setInterval(() => {
         if (currentUser && campaignSync.list(currentUser.id).length) flushCampaignOutbox();
       }, 30000);
+      setInterval(refreshCampaignView, 60000);
 
       supabaseClient.auth.onAuthStateChange((event, session) => {
         const previousUserId = currentUser ? currentUser.id : null;
@@ -8446,8 +8512,10 @@ function exportExcel() {
             console.error(migrationError);
             setAuthStatus(`เชื่อมต่อแล้ว แต่ย้ายข้อมูลเก่าในเครื่องไม่สำเร็จ: ${migrationError.message || migrationError}`);
           }
+          await restoreCampaignView();
           await loadCurrentView();
         } else if (!nextUserId && previousUserId && event === "SIGNED_OUT") {
+          await restoreCampaignView();
           await loadCurrentView();
         }
         await flushCampaignOutbox();
