@@ -3212,7 +3212,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <input id="rangeEndDate" type="date">
         </div>
         <button class="btn upload" id="showDateRange" type="button">ค้นหา</button>
+        <button class="btn" id="syncCampaignNow" type="button">ซิงก์ตอนนี้</button>
         <div class="save-status" id="saveStatus">บันทึกอัตโนมัติตามวันที่</div>
+        <div class="save-status" id="campaignSyncStatus" role="status" aria-live="polite">กำลังตรวจการซิงก์…</div>
       </div>
 
       <div class="toolbar">
@@ -3938,6 +3940,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="app/campaign-sync.js?v=20261029-1"></script>
   <script>
     const rowsEl = document.getElementById("campaignRows");
     const campaignTotalsRow = document.getElementById("campaignTotalsRow");
@@ -4046,8 +4049,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     window.__affSupabaseClient = supabaseClient;
     let selectedDate = todayDate();
     let isLoadingRows = false;
-    let isSavingRows = false;
-    let pendingSaveRows = null;
+    let campaignSyncRetryTimer = null;
     let tableSort = { key: "", direction: "desc" };
     let pendingShopeeFile = null;
     let pendingLazadaFile = null;
@@ -4056,6 +4058,14 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     let pendingConfirmAction = null;
     let isRangeView = false;
     let currentUser = null;
+    const campaignSync = AffCampaignSync.create({
+      storage: localStorage,
+      activeOwner: () => currentUser?.id || null,
+      write: async (date, rows, ownerId) => {
+        if (rows.length) await upsertCampaignRows(date, rows, ownerId);
+        else await deleteCampaignRows(date, ownerId);
+      }
+    });
     const savedViewMode = localStorage.getItem(viewModeStorageKey);
     let currentViewMode = ["all", "combined", "shopee", "lazada"].includes(savedViewMode) ? savedViewMode : "all";
     let currentChartRowsByDate = [];
@@ -6005,6 +6015,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function setAuthUi(user) {
+      if ((currentUser?.id || null) !== (user?.id || null)) latestLoadToken += 1;
       currentUser = user;
       const authCard = document.getElementById("authCard");
       document.getElementById("loginGoogleBtn").hidden = Boolean(user);
@@ -6023,107 +6034,105 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       return url.href;
     }
 
-    async function findCampaignRecord(date) {
-      if (!currentUser) return null;
+    function assertCampaignOwner(ownerId) {
+      if (!ownerId || currentUser?.id !== ownerId) throw Error("บัญชีเปลี่ยนแล้ว กรุณาซิงก์ด้วยบัญชีเดิม");
+    }
+
+    function campaignDataFingerprint(value) {
+      if (Array.isArray(value)) return "[" + value.map(campaignDataFingerprint).join(",") + "]";
+      if (value && typeof value === "object") return "{" + Object.keys(value).sort().map(key => JSON.stringify(key) + ":" + campaignDataFingerprint(value[key])).join(",") + "}";
+      return JSON.stringify(value);
+    }
+
+    async function findCampaignRecord(date, ownerId = currentUser?.id) {
+      assertCampaignOwner(ownerId);
       const { data, error } = await supabaseClient
-        .from("campaign_data")
-        .select("id, data")
-        .eq("user_id", currentUser.id)
-        .eq("record_date", date)
-        .order("created_at", { ascending: false })
-        .limit(1);
+        .from("campaign_data").select("id, data")
+        .eq("user_id", ownerId).eq("record_date", date)
+        .order("created_at", { ascending: false }).limit(1);
       if (error) throw error;
+      assertCampaignOwner(ownerId);
       return data && data.length ? data[0] : null;
     }
 
-    async function upsertCampaignRows(date, rows) {
-      if (!currentUser) return;
-      const existing = await findCampaignRecord(date);
+    async function upsertCampaignRows(date, rows, ownerId = currentUser?.id) {
+      assertCampaignOwner(ownerId);
+      const existing = await findCampaignRecord(date, ownerId);
+      assertCampaignOwner(ownerId);
       if (existing) {
-        if (Array.isArray(existing.data) && existing.data.length) {
-          storeCampaignBackup(date, existing.data, "ก่อนบันทึกทับ Supabase");
-        }
-        const { error } = await supabaseClient
-          .from("campaign_data")
-          .update({ data: rows })
-          .eq("id", existing.id);
+        if (Array.isArray(existing.data) && existing.data.length) storeCampaignBackup(date, existing.data, "ก่อนบันทึกทับ Supabase");
+        const { error } = await supabaseClient.from("campaign_data")
+          .update({ data: rows }).eq("id", existing.id).eq("user_id", ownerId);
         if (error) throw error;
       } else {
-        const { error } = await supabaseClient
-          .from("campaign_data")
-          .insert({
-            id: crypto.randomUUID(),
-            created_at: new Date().toISOString(),
-            user_id: currentUser.id,
-            record_date: date,
-            data: rows
-          });
+        const { error } = await supabaseClient.from("campaign_data").insert({
+          id: crypto.randomUUID(), created_at: new Date().toISOString(),
+          user_id: ownerId, record_date: date, data: rows
+        });
         if (error) throw error;
+      }
+      const saved = await findCampaignRecord(date, ownerId);
+      if (!saved || campaignDataFingerprint(saved.data) !== campaignDataFingerprint(rows)) {
+        throw Error("ยังยืนยันยอดบนคลาวด์ไม่ได้ เก็บคิวไว้ส่งซ้ำแล้ว");
       }
     }
 
-    async function deleteCampaignRows(date) {
-      if (!currentUser) return;
-      const existing = await findCampaignRecord(date);
-      if (existing && Array.isArray(existing.data) && existing.data.length) {
-        storeCampaignBackup(date, existing.data, "ก่อนล้างข้อมูล Supabase");
-      }
-      const { error } = await supabaseClient
-        .from("campaign_data")
-        .delete()
-        .eq("user_id", currentUser.id)
-        .eq("record_date", date);
+    async function deleteCampaignRows(date, ownerId = currentUser?.id) {
+      assertCampaignOwner(ownerId);
+      const existing = await findCampaignRecord(date, ownerId);
+      if (existing && Array.isArray(existing.data) && existing.data.length) storeCampaignBackup(date, existing.data, "ก่อนล้างข้อมูล Supabase");
+      assertCampaignOwner(ownerId);
+      const { error } = await supabaseClient.from("campaign_data").delete()
+        .eq("user_id", ownerId).eq("record_date", date);
       if (error) throw error;
+      if (await findCampaignRecord(date, ownerId)) throw Error("ยังยืนยันการล้างข้อมูลบนคลาวด์ไม่ได้");
     }
 
     async function deleteCampaignRowsRange(startDate, endDate) {
       const dates = eachDateInRange(startDate, endDate);
-      if (!currentUser) {
+      const ownerId = currentUser?.id;
+      if (!ownerId) {
         const store = readDailyStore();
-        dates.forEach((date) => {
-          if (Array.isArray(store[date]) && store[date].length) {
-            storeCampaignBackup(date, store[date], "ก่อนล้างข้อมูลในเครื่อง");
-          }
+        dates.forEach(date => {
+          if (Array.isArray(store[date]) && store[date].length) storeCampaignBackup(date, store[date], "ก่อนล้างข้อมูลในเครื่อง");
           delete store[date];
         });
         writeDailyStore(store);
+        return;
       }
-      if (currentUser && dates.length) {
-        const records = await fetchCampaignRecordsRange(startDate, endDate);
-        records.forEach((record) => {
-          if (Array.isArray(record.data) && record.data.length) {
-            storeCampaignBackup(record.record_date, record.data, "ก่อนล้างข้อมูลช่วงวันที่");
-          }
-        });
-        const { error } = await supabaseClient
-          .from("campaign_data")
-          .delete()
-          .eq("user_id", currentUser.id)
-          .gte("record_date", startDate)
-          .lte("record_date", endDate);
-        if (error) throw error;
-      }
+      // Queue tombstones too, so an older failed edit cannot resurrect a cleared date.
+      for (const date of dates) campaignSync.enqueue(ownerId, date, []);
+      if (!await flushCampaignOutbox()) throw Error("รอซิงก์การล้างข้อมูล ข้อมูลคิวจะส่งซ้ำเมื่อเชื่อมต่อได้");
     }
 
     async function fetchCampaignRows(date) {
-      const existing = await findCampaignRecord(date);
-      return existing && Array.isArray(existing.data) ? existing.data : [];
+      const ownerId = currentUser?.id;
+      const pending = campaignSync.pending(ownerId, date);
+      if (pending) return pending.rows;
+      const existing = await findCampaignRecord(date, ownerId);
+      const latest = campaignSync.pending(ownerId, date);
+      return latest ? latest.rows : existing && Array.isArray(existing.data) ? existing.data : [];
     }
 
     async function fetchCampaignRecordsRange(startDate, endDate) {
-      if (!currentUser) return [];
+      const ownerId = currentUser?.id;
+      if (!ownerId) return [];
       const { data, error } = await supabaseClient
         .from("campaign_data")
         .select("record_date, data, created_at")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", ownerId)
         .gte("record_date", startDate)
         .lte("record_date", endDate)
         .order("record_date", { ascending: true })
         .order("created_at", { ascending: false });
       if (error) throw error;
+      assertCampaignOwner(ownerId);
       const latestByDate = new Map();
       (data || []).forEach((record) => {
         if (!latestByDate.has(record.record_date)) latestByDate.set(record.record_date, record);
+      });
+      campaignSync.list(ownerId).forEach(entry => {
+        if (entry.date >= startDate && entry.date <= endDate) latestByDate.set(entry.date, { record_date: entry.date, data: entry.rows });
       });
       return [...latestByDate.values()].sort((a, b) => a.record_date.localeCompare(b.record_date));
     }
@@ -6142,14 +6151,67 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function migrateLocalRowsToSupabase() {
-      if (!currentUser) return;
-      const store = readDailyStore();
-      const entries = Object.entries(store).filter(([, rows]) => Array.isArray(rows) && rows.length);
+      const ownerId = currentUser?.id;
+      if (!ownerId) return;
+      const entries = Object.entries(readDailyStore()).filter(([, rows]) => Array.isArray(rows) && rows.length);
       for (const [date, rows] of entries) {
-        const existing = await findCampaignRecord(date);
-        if (!existing) await upsertCampaignRows(date, rows);
+        assertCampaignOwner(ownerId);
+        const pending = campaignSync.pending(ownerId, date);
+        const existing = await findCampaignRecord(date, ownerId);
+        if (!existing && !pending) campaignSync.enqueue(ownerId, date, rows.map(normalizeCampaignRow));
+        if (pending || !existing) await campaignSync.flush(ownerId);
+        const saved = await findCampaignRecord(date, ownerId);
+        // Keep conflicting legacy data until the user explicitly reconciles it.
+        if (saved && campaignDataFingerprint(saved.data) === campaignDataFingerprint(rows.map(normalizeCampaignRow))) {
+          const latestStore = readDailyStore();
+          if (campaignDataFingerprint(latestStore[date]) === campaignDataFingerprint(rows)) {
+            delete latestStore[date];
+            writeDailyStore(latestStore);
+          }
+        }
       }
-      clearCampaignLocalCache();
+      if (!Object.keys(readDailyStore()).length) safeRemoveLocalStorage(storageKey);
+    }
+
+    function setCampaignSyncStatus(message) {
+      const element = document.getElementById("campaignSyncStatus");
+      if (element) element.textContent = message;
+    }
+
+    function showCampaignSyncStatus() {
+      if (!currentUser) {
+        setCampaignSyncStatus("เก็บไว้ในเครื่องเท่านั้น · เข้าสู่ระบบ Google เพื่อซิงก์ข้ามเครื่อง");
+        return;
+      }
+      const pending = campaignSync.list(currentUser.id);
+      setCampaignSyncStatus(pending.length
+        ? "รอส่งขึ้นคลาวด์ " + pending.length + " วัน · ข้อมูลสำรองอยู่ในเครื่องนี้"
+        : "บันทึกบนคลาวด์แล้ว · เปิดด้วยบัญชีเดียวกันบนเครื่องอื่นได้");
+    }
+
+    async function flushCampaignOutbox() {
+      const ownerId = currentUser?.id;
+      if (!ownerId) { showCampaignSyncStatus(); return false; }
+      try {
+        if (campaignSync.list(ownerId).length) setCampaignSyncStatus("กำลังส่งข้อมูลขึ้นคลาวด์…");
+        await campaignSync.flush(ownerId);
+        if (currentUser?.id !== ownerId) return false;
+        showCampaignSyncStatus();
+        return campaignSync.list(ownerId).length === 0;
+      } catch (error) {
+        console.error(error);
+        if (currentUser?.id === ownerId) setCampaignSyncStatus("ยังไม่ขึ้นคลาวด์ · เก็บคิวไว้ส่งซ้ำ: " + (error.message || error));
+        return false;
+      }
+    }
+
+    async function syncCampaignNow() {
+      try {
+        await migrateLocalRowsToSupabase();
+        if (await flushCampaignOutbox()) await loadCurrentView();
+      } catch (error) {
+        setCampaignSyncStatus("ยังซิงก์ไม่สำเร็จ · ข้อมูลในเครื่องยังอยู่: " + (error.message || error));
+      }
     }
 
     async function saveAppModuleToSupabase(recordDate, moduleName, value) {
@@ -6638,13 +6700,16 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
     async function saveRowsForImportDate(date, rows) {
       const normalizedRows = rows.map(normalizeCampaignRow);
-      if (!currentUser) {
+      const ownerId = currentUser?.id;
+      if (!ownerId) {
         const store = readDailyStore();
-        const localRows = Array.isArray(store[date]) ? store[date] : [];
-        storeCampaignBackup(date, localRows, "ก่อนนำเข้าไฟล์ทับข้อมูลในเครื่อง");
+        storeCampaignBackup(date, Array.isArray(store[date]) ? store[date] : [], "ก่อนนำเข้าไฟล์ทับข้อมูลในเครื่อง");
+        setLocalRowsForDate(date, normalizedRows);
+        showCampaignSyncStatus();
+        return;
       }
-      setLocalRowsForDate(date, normalizedRows);
-      if (currentUser) await upsertCampaignRows(date, normalizedRows);
+      campaignSync.enqueue(ownerId, date, normalizedRows);
+      if (!await flushCampaignOutbox()) throw Error("นำเข้าไว้ในคิวแล้ว แต่ยังไม่ขึ้นคลาวด์ กดซิงก์ตอนนี้เมื่อเชื่อมต่อได้");
     }
 
     async function openLiveAdsRangeDialog() {
@@ -7249,48 +7314,25 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function saveRows(dateToSave = selectedDate, rowsToSave = null) {
-      if (isLoadingRows || isRangeView) return;
-      if (!dateToSave) return;
+      if (isLoadingRows || isRangeView || !dateToSave) return;
       const rows = (rowsToSave || getRowsFromDom()).map(normalizeCampaignRow);
-      if (!currentUser) {
-        const store = readDailyStore();
-        const localRows = Array.isArray(store[dateToSave]) ? store[dateToSave] : [];
-        storeCampaignBackup(dateToSave, localRows, "ก่อนบันทึกทับข้อมูลในเครื่อง");
-      }
-      if (!currentUser) safeSetLocalStorage(storageKey, JSON.stringify(rows));
-      setLocalRowsForDate(dateToSave, rows);
-      if (!currentUser) {
-        if (saveStatusEl) saveStatusEl.textContent = "ยังไม่ได้เข้าสู่ระบบ จึงยังไม่บันทึกขึ้น Supabase";
-        return;
-      }
-      if (isSavingRows) {
-        pendingSaveRows = { date: dateToSave, rows };
-        return;
-      }
-      isSavingRows = true;
-      if (saveStatusEl) {
-        const rowCount = rows.length;
-        saveStatusEl.textContent = `กำลังบันทึกวันที่ ${dateToSave}...`;
-      }
       try {
-        if (rows.length) await upsertCampaignRows(dateToSave, rows);
-        else await deleteCampaignRows(dateToSave);
-        if (saveStatusEl) {
-          const rowCount = rows.length;
-          saveStatusEl.textContent = rowCount
-            ? `บันทึก Supabase วันที่ ${dateToSave} แล้ว (${rowCount} แถว)`
-            : `ล้างข้อมูล Supabase วันที่ ${dateToSave} แล้ว`;
+        const ownerId = currentUser?.id;
+        if (!ownerId) {
+          const store = readDailyStore();
+          storeCampaignBackup(dateToSave, Array.isArray(store[dateToSave]) ? store[dateToSave] : [], "ก่อนบันทึกทับข้อมูลในเครื่อง");
+          safeSetLocalStorage(storageKey, JSON.stringify(rows));
+          setLocalRowsForDate(dateToSave, rows);
+          saveStatusEl.textContent = "บันทึกในเครื่อง · ยังไม่ได้เข้าสู่ระบบ Google";
+          showCampaignSyncStatus();
+          return;
         }
+        campaignSync.enqueue(ownerId, dateToSave, rows);
+        saveStatusEl.textContent = "กำลังบันทึกวันที่ " + dateToSave + "…";
+        if (await flushCampaignOutbox()) saveStatusEl.textContent = "บันทึก Supabase วันที่ " + dateToSave + " แล้ว (" + rows.length + " แถว)";
       } catch (error) {
-        console.error(error);
-        if (saveStatusEl) saveStatusEl.textContent = `บันทึก Supabase ไม่สำเร็จ: ${error.message || error}`;
-      } finally {
-        isSavingRows = false;
-        if (pendingSaveRows) {
-          const pending = pendingSaveRows;
-          pendingSaveRows = null;
-          saveRows(pending.date, pending.rows);
-        }
+        saveStatusEl.textContent = "บันทึกยังไม่สำเร็จ กรุณาดาวน์โหลด Excel สำรอง: " + (error.message || error);
+        setCampaignSyncStatus("ยังไม่ยืนยันยอดบนคลาวด์");
       }
     }
 
@@ -7332,7 +7374,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         if (currentUser) {
           const remoteRows = await fetchCampaignRows(date);
           rows = remoteRows;
-          loadedFromSupabase = true;
+          loadedFromSupabase = !campaignSync.pending(currentUser.id, date);
           setLocalRowsForDate(date, rows);
         } else {
           rows = localRows;
@@ -7340,7 +7382,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       } catch (error) {
         console.error(error);
         const store = readDailyStore();
-        rows = Array.isArray(store[date]) ? store[date] : [];
+        rows = currentUser ? (campaignSync.pending(currentUser.id, date)?.rows || []) : (Array.isArray(store[date]) ? store[date] : []);
         loadedFromSupabase = false;
         if (saveStatusEl) saveStatusEl.textContent = `โหลด Supabase ไม่สำเร็จ ใช้ข้อมูลในเครื่องแทน: ${error.message || error}`;
       }
@@ -7396,7 +7438,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       } catch (error) {
         console.error(error);
         const store = readDailyStore();
-        const localRowsByDate = new Map(dates.map((date) => [date, Array.isArray(store[date]) ? store[date] : []]));
+        const localRowsByDate = new Map(dates.map((date) => [date, currentUser ? (campaignSync.pending(currentUser.id, date)?.rows || []) : (Array.isArray(store[date]) ? store[date] : [])]));
         allRows = dates.flatMap((date) => localRowsByDate.get(date));
         chartRowsByDate = dates.map((date) => ({ date, rows: localRowsByDate.get(date) }));
         saveStatusEl.textContent = allRows.length
@@ -8227,13 +8269,24 @@ function exportExcel() {
         setAuthStatus(`ตรวจสอบสถานะ Login ไม่สำเร็จ: ${error.message || error}`);
       }
 
+      await flushCampaignOutbox();
       await loadCurrentView();
+      showCampaignSyncStatus();
+      document.getElementById("syncCampaignNow").addEventListener("click", syncCampaignNow);
+      window.addEventListener("online", syncCampaignNow);
+      window.addEventListener("focus", () => { if (currentUser) flushCampaignOutbox(); });
+      campaignSyncRetryTimer = setInterval(() => {
+        if (currentUser && campaignSync.list(currentUser.id).length) flushCampaignOutbox();
+      }, 30000);
 
-      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+      supabaseClient.auth.onAuthStateChange((event, session) => {
         const previousUserId = currentUser ? currentUser.id : null;
         const nextUser = session ? session.user : null;
         const nextUserId = nextUser ? nextUser.id : null;
         setAuthUi(nextUser);
+        // Release the Supabase auth lock before making database requests.
+        setTimeout(async () => {
+        if ((currentUser?.id || null) !== nextUserId) return;
         if (nextUserId && nextUserId !== previousUserId) {
           try {
             await migrateLocalRowsToSupabase();
@@ -8246,6 +8299,9 @@ function exportExcel() {
         } else if (!nextUserId && previousUserId && event === "SIGNED_OUT") {
           await loadCurrentView();
         }
+        await flushCampaignOutbox();
+        showCampaignSyncStatus();
+        }, 0);
       });
     }
 
