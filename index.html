@@ -3290,10 +3290,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <thead>
             <tr>
               <th>แพลตฟอร์ม</th>
-              <th>SUP ID</th><th>ชื่อสินค้า / แคมเปญ</th>
+              <th>SUP ID</th>
+              <th><button class="sort-header" type="button" data-sort-key="lazadaIncome" data-sort-label="ยอด Lazada">ยอด Lazada ↕</button></th>
+              <th>ชื่อสินค้า / แคมเปญ</th>
               <th><button class="sort-header" type="button" data-sort-key="orders" data-sort-label="ออเดอร์">ออเดอร์ ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="shopeeIncome" data-sort-label="ยอด Shopee">ยอด Shopee ↕</button></th>
-              <th><button class="sort-header" type="button" data-sort-key="lazadaIncome" data-sort-label="ยอด Lazada">ยอด Lazada ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="adCost" data-sort-label="ค่าแอด">ค่าแอด ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="income" data-sort-label="รายได้รวม">รายได้รวม ↕</button></th>
               <th><button class="sort-header" type="button" data-sort-key="profit" data-sort-label="กำไรสุทธิ">กำไรสุทธิ ↕</button></th>
@@ -3307,10 +3308,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <tbody id="campaignRows"></tbody>
           <tfoot>
             <tr class="table-total-row" id="campaignTotalsRow">
-              <td colspan="3" data-total-label>รวมรายการที่แสดง</td>
+              <td colspan="2" data-total-label>รวมรายการที่แสดง</td>
+              <td data-total="lazadaIncome">฿0</td>
+              <td></td>
               <td data-total="orders">0</td>
               <td data-total="shopeeIncome">฿0</td>
-              <td data-total="lazadaIncome">฿0</td>
               <td data-total="adCost">฿0</td>
               <td data-total="income">฿0</td>
               <td data-total="profit">฿0</td>
@@ -7995,10 +7997,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
             <button class="copy-name-btn" type="button" data-copy-campaign-name title="Copy SUP ID" aria-label="Copy SUP ID">⧉</button>
           </div>
         </td>
+        <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="decimal" step="0.01" value="${decimalNumberDisplay(row.lazadaIncome)}"></td>
         <td class="aff-product-cell" data-label="Product / Campaign"><span title="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName)}">${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName) || "-"}</span></td>
         <td data-label="ออเดอร์"><input name="orders" type="number" inputmode="numeric" min="0" step="1" value="${row.orders || 0}"></td>
         <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.shopeeIncome)}"></td>
-        <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="decimal" step="0.01" value="${decimalNumberDisplay(row.lazadaIncome)}"></td>
         <td class="ad-cost-cell" data-label="ค่าแอด"><input class="ad-cost-input" name="adCost" type="number" inputmode="numeric" min="0" step="1" value="${wholeNumberDisplay(row.adCost)}"></td>
         <td class="result" data-label="รายได้รวม" data-result="income">฿0.00</td>
         <td class="result" data-label="กำไรสุทธิ" data-result="profit">฿0.00</td>
