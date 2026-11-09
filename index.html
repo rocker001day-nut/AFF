@@ -7661,8 +7661,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         if (!unchanged) {
           rowsEl.innerHTML = "";
           rows.forEach(addRow);
+          // Background refresh must retain the sort chosen in the table header.
+          reorderTableRows();
           updateAll();
-          keepLiveFirst();
           applySearchFilter();
           renderCurrentChart();
         }
@@ -8022,7 +8023,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       ["shopeeIncome", "lazadaIncome", "adCost"].forEach((fieldName) => {
         tr.querySelector(`[name="${fieldName}"]`).addEventListener("blur", (event) => {
           event.target.value = fieldName === 'lazadaIncome' ? decimalNumberDisplay(event.target.value) : wholeNumberDisplay(event.target.value);
-          updateAll({ reorder: true, persist: true });
+          // Blur runs before a Copy click; keep rows in place so the clicked SUP stays under the pointer.
+          updateAll({ persist: true });
         });
       });
       tr.querySelectorAll("select").forEach((select) => select.addEventListener("change", () => updateAll({ reorder: true, persist: true })));

@@ -26,17 +26,24 @@ function loadHarness(overrides={}) {
   const values={
     currentUser:{id:'a'},latestLoadToken:0,loadedCampaignView:null,currentChartRowsByDate:[],
     selectedDate:'2026-10-27',isRangeView:false,isLoadingRows:false,campaignViewReadFailed:false,
+    tableSort:{key:'',direction:'desc'},
     dateInput:{value:'2026-10-28'},rangeEndInput:{value:'2026-10-28'},saveStatusEl:{textContent:''},
     campaignSync:{pending:()=>null},campaignViewStore:{get:async()=>null},readDailyStore:()=>({}),
     fetchCampaignRows:async()=>[{name:'SUP',shopeeIncome:53068.79,lazadaIncome:20467.59,adCost:89788.63}],
     fetchCampaignRecordsRange:async()=>[],rowsEl,
     updateEditState:()=>{state.locks.push(ctx.isLoadingRows||ctx.campaignViewReadFailed);},
     saveCurrentView:(start,end)=>state.saved.push([start,end]),
-    addRow:row=>state.rendered.push({...row}),updateAll(){},keepLiveFirst(){},applySearchFilter(){},renderCurrentChart(){},
+    addRow:row=>state.rendered.push({...row}),updateAll(){},
+    applyTableSort(){
+      const {key,direction}=ctx.tableSort;
+      state.rendered.sort((a,b)=>direction==='desc'?Number(b[key]||0)-Number(a[key]||0):Number(a[key]||0)-Number(b[key]||0));
+    },
+    keepLiveFirst(){state.rendered.sort((a,b)=>Number(b.platform==='Live สด')-Number(a.platform==='Live สด'));},
+    applySearchFilter(){},renderCurrentChart(){},
     mergeRowsForRange:rows=>rows,
     ...overrides
   };
-  ctx=context(['eachDateInRange','campaignDataFingerprint','loadCampaignView','loadRowsForDate','loadRowsForDateRange'],values);
+  ctx=context(['eachDateInRange','campaignDataFingerprint','reorderTableRows','loadCampaignView','loadRowsForDate','loadRowsForDateRange'],values);
   return {ctx,state};
 }
 
@@ -169,3 +176,19 @@ test('a signed-in import reads fresh cloud data instead of stale current-date DO
   const rows=await ctx.loadRowsForImportDate('2026-10-28');
   assert.equal(reads,1);assert.equal(rows[0].lazadaIncome,20);assert.equal(rows[0].adCost,45);
 });
+
+for (const direction of ['asc','desc']) {
+  test('background reload retains the selected '+direction+' Lazada sort',async()=>{
+    const cloud=[{name:'MID',lazadaIncome:20},{name:'LOW',lazadaIncome:10},{name:'HIGH',lazadaIncome:30}];
+    const prior=[...cloud].sort((a,b)=>direction==='desc'?b.lazadaIncome-a.lazadaIncome:a.lazadaIncome-b.lazadaIncome);
+    const h=loadHarness({tableSort:{key:'lazadaIncome',direction},
+      loadedCampaignView:{ownerId:'a',startDate:'2026-10-28',endDate:'2026-10-28'},
+      currentChartRowsByDate:[{date:'2026-10-28',rows:prior}],
+      fetchCampaignRows:async()=>cloud});
+    h.state.rendered=prior.map(row=>({...row}));
+    assert.equal(await h.ctx.loadRowsForDate('2026-10-28'),true);
+    assert.deepEqual(h.state.rendered.map(row=>row.name),prior.map(row=>row.name));
+    assert.equal(h.ctx.tableSort.key,'lazadaIncome');
+    assert.equal(h.ctx.tableSort.direction,direction);
+  });
+}
