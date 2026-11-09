@@ -2879,6 +2879,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
 (function (root) {
   "use strict";
   const colors = ["#f97316", "#6366f1", "#16a34a", "#ef4444", "#94a3b8"];
+  const chartMoneyFormatter = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 });
   const number = value => Number.isFinite(Number(value)) ? Number(value) : 0;
 
   function splitSupName(value) {
@@ -3030,7 +3031,7 @@ body.dark .aff-account-bar .auth-card { background:var(--panel); }
     const revenue = document.getElementById("affRevenueDonut");
     const outcomes = document.getElementById("affOutcomeDonut");
     if (!revenue || !outcomes) return;
-    const money = value => new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB", maximumFractionDigits: 2 }).format(value);
+    const money = value => chartMoneyFormatter.format(value);
     draw(revenue, ["Shopee", "Lazada"], data.revenue, colors.slice(0, 2), money, money);
     draw(outcomes, ["กำไร", "ขาดทุน", "เท่าทุน"], data.outcomes, colors.slice(2), value => value + " รายการ", value => value + " รายการ");
     const supContainer = document.getElementById("affSupRanking");
@@ -4153,6 +4154,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       document.getElementById("facebookPage").hidden = targetPage !== "facebook";
       document.getElementById("editPostPage").hidden = targetPage !== "editpost";
       document.getElementById("facebookPublisherPage").hidden = targetPage !== "publisher";
+      if (targetPage === "dashboard" && loadedCampaignView) refreshCampaignView();
+      if (targetPage === "office") renderOfficeTasks();
+      if (targetPage === "dorm") renderDormPage();
       if (targetPage === "facebook") document.dispatchEvent(new CustomEvent("aff:facebook:open"));
       if (targetPage === "editpost") document.dispatchEvent(new CustomEvent("aff:edit-post:open"));
       if (targetPage === "publisher") document.dispatchEvent(new CustomEvent("aff:publisher:open"));
@@ -4361,6 +4365,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function renderOfficeTasks() {
+      if (aiOfficePageEl.hidden) return;
       const tasks = readOfficeTasks();
       const statuses = ["todo", "doing", "done"];
       const statusLabels = { todo: "รอทำ", doing: "กำลังทำ", done: "เสร็จแล้ว" };
@@ -5073,6 +5078,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function renderDormPage() {
+      if (dormPageEl.hidden) return;
       dormState = dormState || readDormState();
       dormMonthInput.value = dormState.month || currentDormMonth();
       dormInvoiceDateInput.value = dormInvoiceDateInput.value || todayDate();
@@ -6283,7 +6289,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     async function refreshCampaignView() {
-      if (!currentUser || campaignRefreshActive || isLoadingRows || campaignUploadActive || document.hidden) return;
+      if (!currentUser || campaignRefreshActive || isLoadingRows || campaignUploadActive || document.hidden || dashboardPageEl.hidden) return;
       const editing = () => rowsEl.contains(document.activeElement) && document.activeElement?.matches("input, select, textarea");
       if (editing() || (loadedCampaignView && !campaignViewReadFailed && (dateInput.value !== loadedCampaignView.startDate || rangeEndInput.value !== loadedCampaignView.endDate))) return;
       const ownerId = currentUser.id;
@@ -6291,7 +6297,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       campaignRefreshActive = true;
       try {
         if (!await flushCampaignOutbox()) return;
-        if (currentUser?.id !== ownerId || choiceRevision !== campaignViewChoiceRevision || editing() || campaignUploadActive || isLoadingRows) return;
+        if (currentUser?.id !== ownerId || choiceRevision !== campaignViewChoiceRevision || editing() || campaignUploadActive || isLoadingRows || document.hidden || dashboardPageEl.hidden) return;
         await loadCurrentView();
       } catch (error) { console.warn("Automatic campaign refresh failed", error); }
       finally { campaignRefreshActive = false; }
@@ -6413,16 +6419,19 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       }
     }
 
+    const moneyFormatter = new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB" });
+    const moneyWholeFormatter = new Intl.NumberFormat("th-TH", {
+      style: "currency",
+      currency: "THB",
+      maximumFractionDigits: 0
+    });
+
     function money(value) {
-      return new Intl.NumberFormat("th-TH", { style: "currency", currency: "THB" }).format(value || 0);
+      return moneyFormatter.format(value || 0);
     }
 
     function moneyWhole(value) {
-      return new Intl.NumberFormat("th-TH", {
-        style: "currency",
-        currency: "THB",
-        maximumFractionDigits: 0
-      }).format(Math.round(Number(value || 0)));
+      return moneyWholeFormatter.format(Math.round(Number(value || 0)));
     }
 
     function percent(value) {
@@ -7664,8 +7673,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           // Background refresh must retain the sort chosen in the table header.
           reorderTableRows();
           updateAll();
-          applySearchFilter();
-          renderCurrentChart();
+          if (isRangeView) renderCurrentChart();
         }
         if (readError) saveStatusEl.textContent = "โหลดคลาวด์ไม่สำเร็จ · " + (rows.length ? "ยังแสดงยอดที่จำไว้ อ่านอย่างเดียวจนเชื่อมต่อได้: " : "ยังยืนยันยอดวันนี้ไม่ได้: ") + (readError.message || readError);
         else if (isRangeView) saveStatusEl.textContent = `ดูยอดรวม ${startDate} ถึง ${endDate} (${rows.length} SUP จาก ${dates.length} วัน)`;
@@ -7749,8 +7757,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
     function applyTableSort() {
       if (!tableSort.key) return;
+      const rowData = getRowsFromDom();
       const rows = [...rowsEl.querySelectorAll("tr")].map((tr, index) => {
-        const row = getRowsFromDom()[index];
+        const row = rowData[index];
         const viewRow = rowForViewMode(row);
         const result = calculate(viewRow);
         return {
@@ -7773,9 +7782,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function keepLiveFirst() {
+      const rowData = getRowsFromDom();
       const rows = [...rowsEl.querySelectorAll("tr")].map((tr, index) => ({
         tr,
-        row: getRowsFromDom()[index],
+        row: rowData[index],
         index
       }));
       rows
@@ -7783,9 +7793,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         .forEach((item) => rowsEl.appendChild(item.tr));
     }
 
-    function updateCampaignTotalsRow() {
+    function updateCampaignTotalsRow(rows = getRowsFromDom()) {
       if (!campaignTotalsRow) return;
-      const rows = getRowsFromDom();
       const totals = {
         rows: 0,
         orders: 0,
@@ -7838,12 +7847,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       setTotal("status", totals.rows ? `คุ้ม ${totals.winners}/${totals.rows}` : "-", totalClass);
     }
 
-    function applySearchFilter() {
+    function applySearchFilter(rows = getRowsFromDom()) {
       const query = searchQuery.trim().toLowerCase();
       let visibleCount = 0;
       let totalCount = 0;
       let modeCount = 0;
-      const rows = getRowsFromDom();
       rowsEl.querySelectorAll("tr").forEach((tr, index) => {
         totalCount += 1;
         const row = rows[index];
@@ -7859,7 +7867,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         : currentViewMode === "all"
           ? "แสดงทั้งหมด"
           : `แสดง ${modeCount} / ${totalCount} แถว (${viewModeLabel()})`;
-      updateCampaignTotalsRow();
+      updateCampaignTotalsRow(rows);
     }
 
     function captureActiveField() {
@@ -7933,7 +7941,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         if (platformReadonly) platformReadonly.textContent = correctedPlatform;
         tr.className = platformClass(correctedPlatform);
       });
-      applySearchFilter();
+      applySearchFilter(rows);
 
       const totalRoi = totalCost > 0 ? totalProfit / totalCost * 100 : 0;
       document.getElementById("sumProfit").textContent = money(totalProfit);
@@ -8037,8 +8045,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         updateAll({ reorder: true, persist: true });
       });
       rowsEl.appendChild(tr);
-      updateAll({ reorder: !isLoadingRows, persist: !isLoadingRows });
-      updateEditState();
+      // Bulk loading renders totals, charts and edit state once after all rows are added.
+      if (!isLoadingRows) {
+        updateAll({ reorder: true, persist: true });
+        updateEditState();
+      }
     }
 
 function exportExcel() {

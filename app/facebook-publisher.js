@@ -264,10 +264,10 @@
   $('fpRefreshResults').addEventListener('click',loadJobs);
   if(!$('fpStart').value){const soon=new Date(Date.now()+120000),local=new Date(soon.getTime()-soon.getTimezoneOffset()*60000);$('fpStart').value=local.toISOString().slice(0,16)}
   render();
-  requestBrowserStatus();
+  if(!$('facebookPublisherPage').hidden)requestBrowserStatus();
   root.document.addEventListener('aff:publisher:open',()=>{loadPages();loadJobs();requestBrowserStatus()});
   if(root.location.hash==='#publisher')root.document.querySelector('[data-page-target="publisher"]')?.click();
   if(!$('facebookPublisherPage').hidden){loadPages();loadJobs()}
-  root.setInterval(()=>{if(!$('facebookPublisherPage').hidden&&connectedPages.length)loadJobs()},10000);
+  root.setInterval(()=>{if(!root.document.hidden&&!$('facebookPublisherPage').hidden&&connectedPages.length)loadJobs()},10000);
   root.addEventListener('beforeunload',()=>{if(imageUrl)URL.revokeObjectURL(imageUrl)});
 })(typeof window!=='undefined'?window:globalThis);

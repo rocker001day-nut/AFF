@@ -143,6 +143,7 @@
     return node;
   }
   function renderList() {
+    if ($('editPostPage').hidden) return;
     $('epWorkspace').hidden = !state.records.length;
     $('epExport').disabled = !state.records.length;
     $('epBackup').disabled = !state.records.length;
@@ -174,6 +175,7 @@
     navigator.clipboard.writeText(value).then(() => message('คัดลอกลิงก์ใหม่แล้ว')).catch(() => message('คัดลอกไม่ได้ กรุณาเลือกลิงก์ในช่องแล้วคัดลอกเอง', true));
   }
   function renderDetail() {
+    if ($('editPostPage').hidden) return;
     const host = $('epDetail');
     host.replaceChildren();
     const record = selected();
@@ -375,6 +377,7 @@
     event.target.value = '';
     importFile(file);
   });
+  document.addEventListener('aff:edit-post:open', () => { renderList(); renderDetail(); });
   $('epSearch').addEventListener('input', renderList);
   $('epExport').addEventListener('click', exportSummary);
   $('epBackup').addEventListener('click', exportBackup);
