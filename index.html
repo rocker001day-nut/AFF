@@ -6896,7 +6896,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         let marker = rememberedCampaignUploads.get(platform);
         if (!marker || marker.file !== file) marker = rememberCampaignFile(platform, file, statusEl);
         let record = await marker.promise;
-        if (marker.importMode !== importMode) {
+        if ((marker.importMode || "add") !== importMode) {
           record = await campaignImportStore.put(platform, file, marker.ownerId, importMode);
           marker.importMode = importMode;
           marker.record = record;
@@ -6922,6 +6922,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         try { await campaignImportStore.remove(record.id, record.revision); }
         catch (error) { console.warn("Cloud saved; upload backup retained", error); }
         if (pendingCampaignFile(platform) === file) {
+          if (modeControl) modeControl.value = "add";
           setPendingCampaignFile(platform, null);
           document.getElementById(campaignUploadControls[platform].input).value = "";
           if (rememberedCampaignUploads.get(platform) === marker) rememberedCampaignUploads.delete(platform);
@@ -7361,9 +7362,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       return { dates, totalIncome, totalOrders, totalSupGroups, skippedGroups, appliedGroups, incomeChange };
     }
 
-    async function importAffiliateFile(platform, file, statusEl, importMode) {
+    async function importAffiliateFile(platform, file, statusEl, importMode = "add") {
       statusEl.textContent = "กำลังอ่านไฟล์...";
-      const mode = importMode || document.getElementById(platform === "Shopee" ? "shopeeImportMode" : "lazadaImportMode").value;
+      const mode = importMode;
       try {
         const rows = await readUploadRows(file);
         if (!rows.length) throw new Error("ไม่พบข้อมูลในไฟล์");

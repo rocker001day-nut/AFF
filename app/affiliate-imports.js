@@ -68,6 +68,7 @@
     for (const row of rows) for (const entry of row._affiliateImports || []) {
       if (entry.platform === platform && entry.id === id) seen.add(entry.sup);
     }
+    const replaced = new Set();
     let appliedGroups = 0;
     let skippedGroups = 0;
     let incomeChange = 0;
@@ -90,11 +91,16 @@
         rows.push(row);
         byName.set(key, row);
       }
+      if (mode === "replace") {
+        if (replaced.has(row)) throw Error("ชื่อ SUP ที่แก้ไว้ตรงกับหลายกลุ่มในไฟล์ กรุณาตรวจชื่อก่อนแทนยอด: " + group.supName);
+        replaced.add(row);
+      }
       const previous = number(row[field]);
       const entries = row._affiliateImports || [];
       if (mode === "replace") {
         const active = entries.filter(entry => entry.platform === platform && entry.active !== false);
-        if (!number(row[other])) {
+        const hasOtherOrders = entries.some(entry => entry.platform !== platform && entry.active !== false && entry.orders !== 0);
+        if (!number(row[other]) && !hasOtherOrders) {
           row.orders = group.orders;
         } else if (active.length) {
           row.orders = Math.max(0, number(row.orders) - active.reduce((sum, entry) => sum + entry.orders, 0) + group.orders);

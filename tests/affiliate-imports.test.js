@@ -147,7 +147,7 @@ test('DOM load/edit/save and normalization preserve history, Shopee cents and in
       const node = {
         set innerHTML(value) {
           // Use the actual generated input values, including number formatting.
-          for (const match of value.matchAll(/<input name="([^"]+)"[^>]*value="([^"]*)"/g)) fields[match[1]] = control(match[2]);
+          for (const match of value.matchAll(/<input\b[^>]*\bname="([^"]+)"[^>]*value="([^"]*)"/g)) fields[match[1]] = control(match[2]);
           fields.platform = control('Shopee');
         },
         querySelector(selector) {
@@ -258,19 +258,19 @@ for (const platform of ['Shopee', 'Lazada']) {
     };
     const status = {};
     const first = csvFile('order-1', 100.11);
-    await ctx.importAffiliateFile(platform, first, status);
-    await ctx.importAffiliateFile(platform, csvFile('order-2', 40.22), status);
+    await ctx.importAffiliateFile(platform, first, status, mode.value);
+    await ctx.importAffiliateFile(platform, csvFile('order-2', 40.22), status, mode.value);
     const field = platform === 'Shopee' ? 'shopeeIncome' : 'lazadaIncome';
     assert.equal(saved.get('2026-11-12')[0][field], 140.33);
-    await ctx.importAffiliateFile(platform, { ...first, name: 'renamed.csv' }, status);
+    await ctx.importAffiliateFile(platform, { ...first, name: 'renamed.csv' }, status, mode.value);
     assert.equal(saved.get('2026-11-12')[0][field], 140.33);
     assert.match(status.textContent, /ไม่บวกยอดซ้ำ/);
     mode.value = 'replace';
-    await ctx.importAffiliateFile(platform, csvFile('corrected', 0), status);
+    await ctx.importAffiliateFile(platform, csvFile('corrected', 0), status, mode.value);
     assert.equal(saved.get('2026-11-12')[0][field], 0);
     assert.equal(saved.get('2026-11-12')[0].orders, 0);
     mode.value = 'add';
-    await ctx.importAffiliateFile(platform, first, status);
+    await ctx.importAffiliateFile(platform, first, status, mode.value);
     assert.equal(saved.get('2026-11-12')[0][field], 0, 'superseded report remains remembered');
   });
 }
@@ -311,4 +311,19 @@ test('failed replacement keeps the selected mode with its remembered file and re
   await ctx.restoreRememberedCampaignFiles();
   assert.equal(controls.mode.value, 'replace');
   assert.equal(selectedFile, file);
+});
+
+test('replacement rejects two source SUPs resolving to the same renamed row without altering saved input', () => {
+  const rows = apply([], 'Lazada', [group(100)]).rows;
+  rows[0].name = 'RENAMED';
+  const before = plain(rows);
+  assert.throws(() => apply(rows, 'Lazada', [group(180), group(20, 1, 'RENAMED')], ids[1], 'replace'), /หลายกลุ่ม/);
+  assert.deepEqual(rows, before);
+});
+test('replacement preserves other-platform orders even when its positive and negative amounts net to zero', () => {
+  let rows = apply([], 'Shopee', [group(10, 2)]).rows;
+  rows = apply(rows, 'Shopee', [group(-10, 1)], ids[1]).rows;
+  rows = apply(rows, 'Lazada', [group(40, 1)], ids[2]).rows;
+  rows = apply(rows, 'Lazada', [group(50, 2)], ids[3], 'replace').rows;
+  assert.equal(rows[0].orders, 5);
 });

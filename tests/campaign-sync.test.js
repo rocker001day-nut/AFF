@@ -216,6 +216,7 @@ test('a save acknowledged during a read cannot render or cache the old server sn
 
 test('retrying Shopee report replaces matching SUP income and keeps Lazada and ads', () => {
   const ctx=context(['replaceAffiliatePlatformRows'],{
+    AffAffiliateImports:require('../app/affiliate-imports'),
     normalizeSupName:s=>s.toLowerCase(),platformFromRow:()=> 'Shopee + Lazada',
     addOrMergeRowIntoList:(rows,row)=>rows.push(row),affiliateRowFromGroup:(platform,g)=>({name:g.supName,orders:g.orders,shopeeIncome:g.total,lazadaIncome:0,adCost:0})
   });
