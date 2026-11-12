@@ -78,6 +78,12 @@
         continue;
       }
       let row = byName.get(key);
+      if (!row && mode === "replace") {
+        const originals = rows.filter(item => (item._affiliateImports || [])
+          .some(entry => entry.platform === platform && entry.sup === key));
+        if (originals.length > 1) throw Error("พบ SUP เดิมในหลายแถว กรุณาตรวจชื่อ SUP ก่อนแทนยอด: " + group.supName);
+        row = originals[0];
+      }
       if (!row) {
         row = { platform: group.supName === "Live สด" ? "Live สด" : platform,
           name: group.supName, orders: 0, shopeeIncome: 0, lazadaIncome: 0, adCost: 0 };
@@ -88,10 +94,10 @@
       const entries = row._affiliateImports || [];
       if (mode === "replace") {
         const active = entries.filter(entry => entry.platform === platform && entry.active !== false);
-        if (active.length) {
-          row.orders = Math.max(0, number(row.orders) - active.reduce((sum, entry) => sum + entry.orders, 0) + group.orders);
-        } else if (!number(row[other])) {
+        if (!number(row[other])) {
           row.orders = group.orders;
+        } else if (active.length) {
+          row.orders = Math.max(0, number(row.orders) - active.reduce((sum, entry) => sum + entry.orders, 0) + group.orders);
         } else if (!previous) {
           row.orders = number(row.orders) + group.orders;
         }
