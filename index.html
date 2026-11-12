@@ -3150,6 +3150,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <h2>Shopee Affiliate</h2>
           <p>นำเข้ารายได้ Shopee: ใช้วันที่จากคอลัมน์ D, ชื่อ SUP จาก AQ และรวมรายได้จาก AE</p>
           <input id="shopeeFile" type="file" accept=".xlsx,.xls,.csv">
+          <label for="shopeeImportMode">วิธีรวมยอด</label>
+          <select id="shopeeImportMode">
+            <option value="add">บวกยอดจากไฟล์ใหม่ (แนะนำ)</option>
+            <option value="replace">แทนยอด SUP ในไฟล์</option>
+          </select>
+          <p>ไฟล์ใหม่บวกเพิ่ม · ไฟล์เดิมที่ระบบจำไว้จะไม่บวกซ้ำ<br>เลือกแทนยอดเมื่อไฟล์นี้มียอดครบของ SUP ในวันนั้น รวมถึงไฟล์เก่าที่เคยอัปก่อนระบบจำไฟล์</p>
           <button class="btn upload" id="confirmShopeeUpload" type="button">↑ ยืนยันอัปโหลด Shopee</button>
           <div class="import-status" id="shopeeStatus">ยังไม่ได้อัปโหลดไฟล์</div>
         </div>
@@ -3159,6 +3165,12 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           <h2>Lazada Affiliate</h2>
           <p>นำเข้ารายได้ Lazada: ใช้วันที่จากคอลัมน์ B, ชื่อ SUP จาก AS (Sub ID 1) และรวมค่าคอมจาก W (Payout)</p>
           <input id="lazadaFile" type="file" accept=".xlsx,.xls,.csv">
+          <label for="lazadaImportMode">วิธีรวมยอด</label>
+          <select id="lazadaImportMode">
+            <option value="add">บวกยอดจากไฟล์ใหม่ (แนะนำ)</option>
+            <option value="replace">แทนยอด SUP ในไฟล์</option>
+          </select>
+          <p>ไฟล์ใหม่บวกเพิ่ม · ไฟล์เดิมที่ระบบจำไว้จะไม่บวกซ้ำ<br>เลือกแทนยอดเมื่อไฟล์นี้มียอดครบของ SUP ในวันนั้น รวมถึงไฟล์เก่าที่เคยอัปก่อนระบบจำไฟล์</p>
           <button class="btn upload" id="confirmLazadaUpload" type="button">↑ ยืนยันอัปโหลด Lazada</button>
           <div class="import-status" id="lazadaStatus">ยังไม่ได้อัปโหลดไฟล์</div>
         </div>
@@ -3944,7 +3956,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <script src="app/campaign-sync.js?v=20261029-3"></script>
-  <script src="app/campaign-import-store.js?v=20261029-2"></script>
+  <script src="app/campaign-import-store.js?v=20261112-1"></script>
+  <script src="app/affiliate-imports.js?v=20261112-1"></script>
   <script src="app/campaign-view-store.js?v=20261029-3"></script>
   <script>
     const rowsEl = document.getElementById("campaignRows");
@@ -4069,8 +4082,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     let activeCampaignImportOwner = null;
     let campaignUploadActive = false;
     const campaignUploadControls = {
-      Shopee: { input: "shopeeFile", button: "confirmShopeeUpload", status: "shopeeStatus" },
-      Lazada: { input: "lazadaFile", button: "confirmLazadaUpload", status: "lazadaStatus" },
+      Shopee: { input: "shopeeFile", button: "confirmShopeeUpload", status: "shopeeStatus", mode: "shopeeImportMode" },
+      Lazada: { input: "lazadaFile", button: "confirmLazadaUpload", status: "lazadaStatus", mode: "lazadaImportMode" },
       Facebook: { input: "facebookAdsFile", button: "confirmFacebookAdsUpload", status: "facebookAdsStatus" }
     };
     let searchQuery = "";
@@ -6643,7 +6656,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       return [...groups.values()].sort((a, b) => b.total - a.total);
     }
 
-    function groupRowsByDateAndSup(rows, dateColumnLetters, supColumnLetters, valueColumnLetters, fallbackSupName = "ไม่ระบุ SUP") {
+    function groupRowsByDateAndSup(rows, dateColumnLetters, supColumnLetters, valueColumnLetters, fallbackSupName = "ไม่ระบุ SUP", includeZeroValues = false) {
       const dateIndex = columnLettersToIndex(dateColumnLetters);
       const supIndex = columnLettersToIndex(supColumnLetters);
       const valueIndex = columnLettersToIndex(valueColumnLetters);
@@ -6652,7 +6665,8 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
 
       rows.forEach((row) => {
         const value = parseMoneyCell(row[valueIndex]);
-        if (value === 0) return;
+        const rawValue = cellText(row[valueIndex]).replace(/,/g, "");
+        if (value === 0 && (!includeZeroValues || !rawValue || !Number.isFinite(Number(rawValue)))) return;
 
         const parsedDate = parseOrderDateCell(row[dateIndex]);
         if (!parsedDate) {
@@ -6669,7 +6683,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         }
         const group = groups.get(supName);
         group.total += value;
-        group.orders += 1;
+        if (value !== 0) group.orders += 1;
       });
 
       return {
@@ -6713,7 +6727,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         orders: Number(row.orders || 0),
         shopeeIncome: Number(row.shopeeIncome || 0),
         lazadaIncome: Number(row.lazadaIncome || 0),
-        adCost: Number(row.adCost || 0)
+        adCost: Number(row.adCost || 0),
+        ...(Array.isArray(row._affiliateImports) && row._affiliateImports.length
+          ? { _affiliateImports: row._affiliateImports.map(entry => ({ ...entry })) } : {})
       };
     }
 
@@ -6735,6 +6751,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       existing.shopeeIncome = Number(existing.shopeeIncome || 0) + incoming.shopeeIncome;
       existing.lazadaIncome = Number(existing.lazadaIncome || 0) + incoming.lazadaIncome;
       existing.adCost = Number(existing.adCost || 0) + incoming.adCost;
+      if (incoming._affiliateImports?.length) {
+        const entries = new Map((existing._affiliateImports || []).map(entry => [JSON.stringify([entry.platform, entry.id, entry.sup]), entry]));
+        for (const entry of incoming._affiliateImports) entries.set(JSON.stringify([entry.platform, entry.id, entry.sup]), { ...entry });
+        existing._affiliateImports = [...entries.values()];
+      }
       existing.platform = platformFromRow({
         platform: mergedPlatform(existing.platform, incoming.platform),
         name: existing.name,
@@ -6791,9 +6812,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     }
 
     function rememberCampaignFile(platform, file, statusEl) {
-      const marker = { file, ownerId: currentUser?.id || null, record: null, promise: null };
+      const modeId = campaignUploadControls[platform].mode;
+      const importMode = modeId ? document.getElementById(modeId).value : "add";
+      const marker = { file, importMode, ownerId: currentUser?.id || null, record: null, promise: null };
       rememberedCampaignUploads.set(platform, marker);
-      marker.promise = campaignImportStore.put(platform, file, marker.ownerId).then(record => {
+      marker.promise = campaignImportStore.put(platform, file, marker.ownerId, importMode).then(record => {
         marker.record = record;
         if (rememberedCampaignUploads.get(platform) === marker) statusEl.textContent = "จำไฟล์แล้ว: " + file.name + " · กดยืนยันอัปโหลดเพื่อส่งขึ้นคลาวด์";
         return record;
@@ -6825,8 +6848,11 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           if (!campaignUploadControls[record.platform] || pendingCampaignFile(record.platform)) continue;
           setPendingCampaignFile(record.platform, record.file);
           rememberedCampaignUploads.set(record.platform, {
-            file: record.file, ownerId: record.ownerId, record, promise: Promise.resolve(record)
+            file: record.file, importMode: record.importMode || "add",
+            ownerId: record.ownerId, record, promise: Promise.resolve(record)
           });
+          const modeId = campaignUploadControls[record.platform].mode;
+          if (modeId) document.getElementById(modeId).value = record.importMode || "add";
           const statusEl = document.getElementById(campaignUploadControls[record.platform].status);
           statusEl.className = "import-status";
           statusEl.textContent = "จำไฟล์เดิมไว้แล้ว: " + record.file.name + " · กดยืนยันอัปโหลดต่อได้ ไม่ต้องเลือกไฟล์ใหม่";
@@ -6859,6 +6885,10 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         return false;
       }
       campaignUploadActive = true;
+      const modeId = campaignUploadControls[platform].mode;
+      const modeControl = modeId ? document.getElementById(modeId) : null;
+      const importMode = modeControl?.value || "add";
+      if (modeControl) modeControl.disabled = true;
       updateEditState();
       Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = true; });
       let retained = false;
@@ -6866,12 +6896,18 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         let marker = rememberedCampaignUploads.get(platform);
         if (!marker || marker.file !== file) marker = rememberCampaignFile(platform, file, statusEl);
         let record = await marker.promise;
+        if ((marker.importMode || "add") !== importMode) {
+          record = await campaignImportStore.put(platform, file, marker.ownerId, importMode);
+          marker.importMode = importMode;
+          marker.record = record;
+          marker.promise = Promise.resolve(record);
+        }
         retained = true;
         statusEl.textContent = "จำไฟล์แล้ว · กำลังตรวจบัญชีก่อนบันทึกขึ้นคลาวด์…";
         const ownerId = await requireCampaignCloudSession();
         if (marker.ownerId && marker.ownerId !== ownerId) throw Error("ไฟล์นี้รอส่งเข้าบัญชีเดิม กรุณาเข้าสู่ระบบบัญชีที่เลือกไฟล์ไว้");
         if (!marker.ownerId) {
-          const claimed = await campaignImportStore.put(platform, file, ownerId);
+          const claimed = await campaignImportStore.put(platform, file, ownerId, importMode);
           await campaignImportStore.remove(record.id, record.revision);
           marker.ownerId = ownerId;
           marker.record = claimed;
@@ -6880,12 +6916,13 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         }
         activeCampaignImportOwner = ownerId;
         await ensureSelectedSingleDateLoaded();
-        const result = await importAction();
+        const result = await importAction(importMode);
         assertCampaignOwner(ownerId);
         if (!result || !await flushCampaignOutbox()) throw Error("ยังยืนยันยอดบนคลาวด์ไม่ได้ เก็บไฟล์และคิวไว้ส่งซ้ำแล้ว");
         try { await campaignImportStore.remove(record.id, record.revision); }
         catch (error) { console.warn("Cloud saved; upload backup retained", error); }
         if (pendingCampaignFile(platform) === file) {
+          if (modeControl) modeControl.value = "add";
           setPendingCampaignFile(platform, null);
           document.getElementById(campaignUploadControls[platform].input).value = "";
           if (rememberedCampaignUploads.get(platform) === marker) rememberedCampaignUploads.delete(platform);
@@ -6899,6 +6936,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       } finally {
         activeCampaignImportOwner = null;
         campaignUploadActive = false;
+        if (modeControl) modeControl.disabled = false;
         updateEditState();
         Object.values(campaignUploadControls).forEach(control => { document.getElementById(control.button).disabled = false; });
       }
@@ -7267,35 +7305,14 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       };
     }
 
-    function replaceAffiliatePlatformRows(rows, platform, groups) {
-      const incoming = new Map();
-      for (const group of groups) {
-        const key = normalizeSupName(group.supName);
-        if (!incoming.has(key)) incoming.set(key, { ...group, total: 0, orders: 0 });
-        incoming.get(key).total += group.total;
-        incoming.get(key).orders += group.orders;
-      }
-      for (const group of incoming.values()) {
-        const existing = rows.find(row => normalizeSupName(row.name) === normalizeSupName(group.supName));
-        if (!existing) {
-          addOrMergeRowIntoList(rows, affiliateRowFromGroup(platform, group));
-          continue;
-        }
-        const field = platform === "Shopee" ? "shopeeIncome" : "lazadaIncome";
-        const other = platform === "Shopee" ? "lazadaIncome" : "shopeeIncome";
-        if (!Number(existing[other] || 0)) existing.orders = group.orders;
-        else if (!Number(existing[field] || 0)) existing.orders = Number(existing.orders || 0) + group.orders;
-        // Re-importing a remembered daily report replaces this SUP's amount.
-        existing[field] = group.total;
-      }
-      return rows.filter(row => {
-        row.platform = platformFromRow(row);
-        return Number(row.shopeeIncome || 0) !== 0 || Number(row.lazadaIncome || 0) !== 0 || Number(row.adCost || 0) !== 0;
-      });
+    function replaceAffiliatePlatformRows(rows, platform, groups, source = { mode: "replace" }) {
+      const result = AffAffiliateImports.merge(rows, platform, groups, source);
+      for (const row of result.rows) row.platform = platformFromRow(row);
+      return result.rows;
     }
 
-    function groupLazadaRows(rows) {
-      const result = groupRowsByDateAndSup(rows, 'B', 'AS', 'W');
+    function groupLazadaRows(rows, includeZeroValues = false) {
+      const result = groupRowsByDateAndSup(rows, 'B', 'AS', 'W', 'ไม่ระบุ SUP', includeZeroValues);
       for (const [date, groups] of result.groupsByDate) {
         const merged = new Map();
         for (const group of groups) {
@@ -7309,42 +7326,18 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       return result;
     }
 
-    function mergeLazadaImportRows(rows, groups, legacyGroups = []) {
-      const incomingNames = new Set(groups.map(group => normalizeSupName(group.supName)));
-      // Repair only a provable old AR metadata bucket from this same report.
-      // Preserve ad spend and never clear a real SUP or a mixed Shopee row.
-      for (const legacy of legacyGroups) {
-        const name = normalizeSupName(legacy.supName);
-        if (!['n', 'y'].includes(name) || incomingNames.has(name)) continue;
-        const row = rows.find(item => normalizeSupName(item.name) === name);
-        if (!row || Number(row.shopeeIncome || 0) !== 0 ||
-            Math.abs(Number(row.lazadaIncome || 0) - legacy.total) > 0.000001 ||
-            Number(row.orders || 0) !== legacy.orders) continue;
-        row.lazadaIncome = 0;
-        row.orders = 0;
-      }
-      for (const group of groups) {
-        const row = rows.find(item => normalizeSupName(item.name) === normalizeSupName(group.supName));
-        // A daily report replaces this SUP's Lazada payout, including a corrected report.
-        if (row) {
-          if (!Number(row.shopeeIncome || 0)) row.orders = group.orders;
-          else if (!Number(row.lazadaIncome || 0)) row.orders = Number(row.orders || 0) + group.orders;
-          row.lazadaIncome = group.total;
-        } else {
-          addOrMergeRowIntoList(rows, affiliateRowFromGroup('Lazada', group));
-        }
-      }
-      return rows.filter(row => {
-        row.platform = platformFromRow(row);
-        return Number(row.shopeeIncome || 0) !== 0 || Number(row.lazadaIncome || 0) !== 0 || Number(row.adCost || 0) !== 0;
-      });
+    function mergeLazadaImportRows(rows, groups, legacyGroups = [], source = { mode: "replace" }) {
+      return replaceAffiliatePlatformRows(rows, "Lazada", groups, { ...source, legacyGroups });
     }
 
-    async function saveAffiliateGroupsByDate(platform, groupsByDate, legacyGroupsByDate = new Map()) {
+    async function saveAffiliateGroupsByDate(platform, groupsByDate, legacyGroupsByDate = new Map(), source) {
       const dates = [...groupsByDate.keys()].sort();
       let totalIncome = 0;
       let totalOrders = 0;
       let totalSupGroups = 0;
+      let skippedGroups = 0;
+      let appliedGroups = 0;
+      let incomeChange = 0;
 
       for (const date of dates) {
         const rows = await loadRowsForImportDate(date);
@@ -7354,36 +7347,46 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
           totalOrders += Number(group.orders || 0);
           totalSupGroups += 1;
         });
-        const replacedRows = platform === 'Lazada'
-          ? mergeLazadaImportRows(rows, groups, legacyGroupsByDate.get(date) || [])
-          : replaceAffiliatePlatformRows(rows, platform, groups);
-        await saveRowsForImportDate(date, replacedRows);
+        const result = AffAffiliateImports.merge(rows, platform, groups, {
+          ...source, legacyGroups: legacyGroupsByDate.get(date) || []
+        });
+        for (const row of result.rows) row.platform = platformFromRow(row);
+        skippedGroups += result.skippedGroups;
+        appliedGroups += result.appliedGroups;
+        incomeChange += result.incomeChange;
+        if (result.appliedGroups) await saveRowsForImportDate(date, result.rows);
       }
 
       showImportedDateView(dates);
       await loadCurrentView();
-      return { dates, totalIncome, totalOrders, totalSupGroups };
+      return { dates, totalIncome, totalOrders, totalSupGroups, skippedGroups, appliedGroups, incomeChange };
     }
 
-    async function importAffiliateFile(platform, file, statusEl) {
+    async function importAffiliateFile(platform, file, statusEl, importMode = "add") {
       statusEl.textContent = "กำลังอ่านไฟล์...";
+      const mode = importMode;
       try {
         const rows = await readUploadRows(file);
         if (!rows.length) throw new Error("ไม่พบข้อมูลในไฟล์");
+        const source = { id: await AffAffiliateImports.fingerprint(rows), mode };
+        const importSummary = result => source.mode === "replace"
+          ? "แทนยอด SUP ตามไฟล์แล้ว"
+          : result.appliedGroups === 0 ? "ไฟล์นี้นำเข้าแล้ว ไม่บวกยอดซ้ำ"
+            : `บวกยอดจากไฟล์ใหม่แล้ว ${money(result.incomeChange)}${result.skippedGroups ? " · ข้ามรายการที่เคยนำเข้าแล้ว" : ""}`;
 
         if (platform === "Shopee") {
-          const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "D", "AQ", "AE", "Live สด");
+          const { groupsByDate, fallbackDateRows } = groupRowsByDateAndSup(rows, "D", "AQ", "AE", "Live สด", mode === "replace");
           if (!groupsByDate.size) throw new Error("ไม่พบรายได้ในคอลัมน์ AE สำหรับจัดกลุ่มตาม SUP AQ");
-          const result = await saveAffiliateGroupsByDate("Shopee", groupsByDate);
-          statusEl.textContent = `บันทึก Shopee บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ AE ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ D ไม่ถูกต้อง)` : ""}`;
+          const result = await saveAffiliateGroupsByDate("Shopee", groupsByDate, new Map(), source);
+          statusEl.textContent = `${importSummary(result)} · บันทึก Shopee บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ AE ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ D ไม่ถูกต้อง)` : ""}`;
           return result;
         }
 
-        const { groupsByDate, fallbackDateRows } = groupLazadaRows(rows);
+        const { groupsByDate, fallbackDateRows } = groupLazadaRows(rows, mode === "replace");
         if (!groupsByDate.size) throw new Error("ไม่พบค่าคอมในคอลัมน์ W สำหรับจัดกลุ่มตาม SUP AS (Sub ID 1)");
         const { groupsByDate: legacyGroupsByDate } = groupRowsByDateAndSup(rows, "B", "AR", "W");
-        const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate, legacyGroupsByDate);
-        statusEl.textContent = `บันทึก Lazada บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
+        const result = await saveAffiliateGroupsByDate("Lazada", groupsByDate, legacyGroupsByDate, source);
+        statusEl.textContent = `${importSummary(result)} · บันทึก Lazada บนคลาวด์แล้ว ${result.dates.length} วัน (${dateRangeLabel(result.dates)}) / ${result.totalSupGroups} กลุ่ม SUP: รวมรายได้ W ${money(result.totalIncome)} ตอนนี้แสดงวันแรก ${result.dates[0]}${fallbackDateRows ? ` (ข้าม ${fallbackDateRows} แถว เพราะวันที่ B ไม่ถูกต้อง)` : ""}`;
         return result;
       } catch (error) {
         statusEl.textContent = error.message || "อ่านไฟล์ไม่สำเร็จ";
@@ -7548,7 +7551,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         orders: numberValue(tr.querySelector('[name="orders"]')),
         shopeeIncome: numberValue(tr.querySelector('[name="shopeeIncome"]')),
         lazadaIncome: numberValue(tr.querySelector('[name="lazadaIncome"]')),
-        adCost: numberValue(tr.querySelector('[name="adCost"]'))
+        adCost: numberValue(tr.querySelector('[name="adCost"]')),
+        ...(tr._affiliateImports?.length
+          ? { _affiliateImports: tr._affiliateImports.map(entry => ({ ...entry })) } : {})
       }));
     }
 
@@ -7985,6 +7990,9 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
     function addRow(row = {}) {
       const originalSupParts = AffDashboardVisuals.splitSupName(row.name);
       const tr = document.createElement("tr");
+      if (Array.isArray(row._affiliateImports) && row._affiliateImports.length) {
+        tr._affiliateImports = row._affiliateImports.map(entry => ({ ...entry }));
+      }
       tr.innerHTML = `
         <td data-label="แพลตฟอร์ม">
           <select name="platform">
@@ -8009,7 +8017,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
         <td data-label="ยอด Lazada"><input name="lazadaIncome" type="number" inputmode="decimal" step="0.01" value="${decimalNumberDisplay(row.lazadaIncome)}"></td>
         <td class="aff-product-cell" data-label="Product / Campaign"><span title="${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName)}">${escapeAttr(AffDashboardVisuals.splitSupName(row.name).productName) || "-"}</span></td>
         <td data-label="ออเดอร์"><input name="orders" type="number" inputmode="numeric" min="0" step="1" value="${row.orders || 0}"></td>
-        <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="numeric" step="1" value="${wholeNumberDisplay(row.shopeeIncome)}"></td>
+        <td data-label="ยอด Shopee"><input name="shopeeIncome" type="number" inputmode="decimal" step="0.01" value="${decimalNumberDisplay(row.shopeeIncome)}"></td>
         <td class="ad-cost-cell" data-label="ค่าแอด"><input class="ad-cost-input" name="adCost" type="number" inputmode="numeric" min="0" step="1" value="${wholeNumberDisplay(row.adCost)}"></td>
         <td class="result" data-label="รายได้รวม" data-result="income">฿0.00</td>
         <td class="result" data-label="กำไรสุทธิ" data-result="profit">฿0.00</td>
@@ -8030,7 +8038,7 @@ body.dark .fb-badge,body.dark .fb-setup a,body.dark .fb-item-buttons a { color:#
       tr.querySelector("[data-aff-select]").addEventListener("change", () => updateAll());
       ["shopeeIncome", "lazadaIncome", "adCost"].forEach((fieldName) => {
         tr.querySelector(`[name="${fieldName}"]`).addEventListener("blur", (event) => {
-          event.target.value = fieldName === 'lazadaIncome' ? decimalNumberDisplay(event.target.value) : wholeNumberDisplay(event.target.value);
+          event.target.value = fieldName === 'adCost' ? wholeNumberDisplay(event.target.value) : decimalNumberDisplay(event.target.value);
           // Blur runs before a Copy click; keep rows in place so the clicked SUP stays under the pointer.
           updateAll({ persist: true });
         });
@@ -8388,7 +8396,7 @@ function exportExcel() {
       }
       askConfirm("ยืนยันอัปโหลด Shopee", `ต้องการนำเข้าไฟล์ ${pendingShopeeFile.name} หรือไม่`, async () => {
         const file = pendingShopeeFile;
-        await runRememberedCampaignImport("Shopee", file, statusEl, () => importAffiliateFile("Shopee", file, statusEl));
+        await runRememberedCampaignImport("Shopee", file, statusEl, mode => importAffiliateFile("Shopee", file, statusEl, mode));
       });
     });
 
@@ -8409,7 +8417,7 @@ function exportExcel() {
       }
       askConfirm("ยืนยันอัปโหลด Lazada", `ต้องการนำเข้าไฟล์ ${pendingLazadaFile.name} หรือไม่`, async () => {
         const file = pendingLazadaFile;
-        await runRememberedCampaignImport("Lazada", file, statusEl, () => importAffiliateFile("Lazada", file, statusEl));
+        await runRememberedCampaignImport("Lazada", file, statusEl, mode => importAffiliateFile("Lazada", file, statusEl, mode));
       });
     });
 

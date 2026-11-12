@@ -134,7 +134,7 @@ for (const clipboardMode of ['modern', 'fallback']) {
         assert.equal(h.updates.some(options => options.reorder), false);
         assert.ok(h.updates.some(options => options.persist));
         assert.equal(clickedRow.fields[field].value,
-          field === 'lazadaIncome' ? (edited ? '99.75' : '10.00') : (edited ? '100' : '10'));
+          field !== 'adCost' ? (edited ? '99.75' : '10.00') : (edited ? '100' : '10'));
         assert.equal(h.context.saveStatusEl.textContent, 'Copied SUP ID: SUP-B');
       });
     }

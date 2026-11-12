@@ -74,3 +74,10 @@ test('missing IndexedDB reports an error instead of pretending to remember files
   const store=create({indexedDB:null});
   await assert.rejects(store.put('Shopee',new File(['x'],'x.csv')),/เก็บไฟล์/);
 });
+
+test('replacement mode survives retaining a file and opening a fresh store', async () => {
+  const indexedDB = fakeIndexedDB();
+  await create({indexedDB}).put('Lazada', new File(['x'],'report.csv'), 'a', 'replace');
+  const [record] = await create({indexedDB}).list('a');
+  assert.equal(record.importMode, 'replace');
+});

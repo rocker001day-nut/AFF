@@ -32,9 +32,9 @@
         catch (error) { try { tx.abort(); } catch (_) {} reject(error); }
       });
     }
-    async function put(platform,file,ownerId = null) {
+    async function put(platform,file,ownerId = null,importMode = "add") {
       if (!platform || !file) throw Error("ไม่พบไฟล์สำหรับจดจำ");
-      const record = {id:JSON.stringify([ownerId || null, platform]),platform,file,ownerId:ownerId || null,
+      const record = {id:JSON.stringify([ownerId || null, platform]),platform,file,importMode:importMode === "replace" ? "replace" : "add",ownerId:ownerId || null,
         revision:Date.now() + "-" + Math.random().toString(36).slice(2),updatedAt:Date.now()};
       return transaction("readwrite", (store,done) => {
         const request = store.put(record);
